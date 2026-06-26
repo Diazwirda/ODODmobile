@@ -1,7 +1,16 @@
 {
   "expo": {
-    "name": "OdobMobileTemp",
-    "slug": "OdobMobileTemp",
-    "version": "1.0.0"
+    "name": "ODOB Mobile",
+    "slug": "odob-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "supportsTablet": false,
+      "deploymentTarget": "16.4"
+    },
+    "android": {
+      "minSdkVersion": 24
+    }
   }
 }
