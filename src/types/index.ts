@@ -1,17 +1,8 @@
 // Barrel export for all TypeScript interfaces and types
 
-export type {
-  AuthUser,
-  AuthResponse,
-  RegisterPayload,
-  LoginPayload,
-} from './auth';
+export type { AuthUser, AuthResponse, RegisterPayload, LoginPayload } from './auth';
 
-export type {
-  ImageFile,
-  Department,
-  NormalizedError,
-} from './common';
+export type { ImageFile, Department, NormalizedError } from './common';
 
 export type {
   MembershipRole,
@@ -22,11 +13,7 @@ export type {
   UpdateRoomPayload,
 } from './room';
 
-export type {
-  Rule,
-  ArchivedRule,
-  CreateRulePayload,
-} from './rule';
+export type { Rule, ArchivedRule, CreateRulePayload } from './rule';
 
 export type {
   ViolationStatus,
@@ -45,8 +32,4 @@ export type {
   LeaderboardFilters,
 } from './dashboard';
 
-export type {
-  UserProfile,
-  ProfileStats,
-  ProfileResponse,
-} from './profile';
+export type { UserProfile, ProfileStats, ProfileResponse } from './profile';

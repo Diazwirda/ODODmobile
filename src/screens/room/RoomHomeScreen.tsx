@@ -5,14 +5,7 @@
  */
 
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -69,9 +62,7 @@ export default function RoomHomeScreen() {
           />
         ) : (
           <View style={styles.bannerFallback}>
-            <Text style={styles.bannerInitials}>
-              {getInitials(activeRoom.name)}
-            </Text>
+            <Text style={styles.bannerInitials}>{getInitials(activeRoom.name)}</Text>
           </View>
         )}
       </View>
@@ -94,9 +85,7 @@ export default function RoomHomeScreen() {
           accessibilityLabel={`${pendingCount} laporan menunggu verifikasi`}
           accessibilityRole="button"
         >
-          <Text style={styles.pendingAlertText}>
-            ⚠️ {pendingCount} laporan menunggu verifikasi
-          </Text>
+          <Text style={styles.pendingAlertText}>⚠️ {pendingCount} laporan menunggu verifikasi</Text>
           <Text style={styles.pendingAlertAction}>Tinjau →</Text>
         </TouchableOpacity>
       )}
@@ -115,9 +104,7 @@ export default function RoomHomeScreen() {
       {/* Quick stats row */}
       <View style={styles.statsRow}>
         <View style={styles.statCard} accessibilityLabel="Total violations">
-          <Text style={styles.statValue}>
-            {violations.length}
-          </Text>
+          <Text style={styles.statValue}>{violations.length}</Text>
           <Text style={styles.statLabel}>Total Laporan</Text>
         </View>
         <View style={styles.statCard} accessibilityLabel="Pending violations">
@@ -155,7 +142,12 @@ const styles = StyleSheet.create({
   bannerInitials: { fontSize: 52, fontWeight: '700', color: '#1D4ED8' },
 
   // Info
-  info: { padding: 16, backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB' },
+  info: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
   roomName: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 4 },
   roomDescription: { fontSize: 14, color: '#6B7280', lineHeight: 20 },
 

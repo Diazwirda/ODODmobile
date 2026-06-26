@@ -4,8 +4,17 @@
  */
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, Switch, ScrollView,
-  Alert, ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Switch,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useForm, Controller } from 'react-hook-form';
@@ -29,62 +38,110 @@ export default function CreateRuleScreen() {
   const { activeRoom } = useRoomStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { control, handleSubmit, formState: { errors } } = useForm<FormValues>({
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { name: '', description: '', category: '', admin_only: false },
   });
 
-  const onSubmit = useCallback(async (values: FormValues) => {
-    if (!activeRoom) return;
-    setIsSubmitting(true);
-    try {
-      await apiClient.post<Rule>(`/rooms/${activeRoom.id}/rules`, {
-        name: values.name,
-        description: values.description || undefined,
-        category: values.category || undefined,
-        admin_only: values.admin_only,
-      });
-      navigation.goBack();
-    } catch {
-      Alert.alert('Gagal', 'Tidak dapat membuat rule. Silakan coba lagi.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [activeRoom, navigation]);
+  const onSubmit = useCallback(
+    async (values: FormValues) => {
+      if (!activeRoom) return;
+      setIsSubmitting(true);
+      try {
+        await apiClient.post<Rule>(`/rooms/${activeRoom.id}/rules`, {
+          name: values.name,
+          description: values.description || undefined,
+          category: values.category || undefined,
+          admin_only: values.admin_only,
+        });
+        navigation.goBack();
+      } catch {
+        Alert.alert('Gagal', 'Tidak dapat membuat rule. Silakan coba lagi.');
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [activeRoom, navigation]
+  );
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title} accessibilityRole="header">Tambah Rule</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          Tambah Rule
+        </Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Nama Rule <Text style={styles.required}>*</Text></Text>
-          <Controller control={control} name="name" render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput style={[styles.input, errors.name && styles.inputError]}
-              placeholder="Masukkan nama rule" placeholderTextColor="#9CA3AF"
-              onChangeText={onChange} onBlur={onBlur} value={value}
-              accessibilityLabel="Nama rule" />
-          )} />
+          <Text style={styles.label}>
+            Nama Rule <Text style={styles.required}>*</Text>
+          </Text>
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, errors.name && styles.inputError]}
+                placeholder="Masukkan nama rule"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={onChange}
+                onBlur={onBlur}
+                value={value}
+                accessibilityLabel="Nama rule"
+              />
+            )}
+          />
           {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Deskripsi <Text style={styles.optional}>(opsional)</Text></Text>
-          <Controller control={control} name="description" render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput style={[styles.input, styles.textArea]}
-              placeholder="Deskripsi singkat rule ini" placeholderTextColor="#9CA3AF"
-              multiline numberOfLines={3} onChangeText={onChange} onBlur={onBlur} value={value}
-              accessibilityLabel="Deskripsi rule" />
-          )} />
+          <Text style={styles.label}>
+            Deskripsi <Text style={styles.optional}>(opsional)</Text>
+          </Text>
+          <Controller
+            control={control}
+            name="description"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Deskripsi singkat rule ini"
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={3}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                value={value}
+                accessibilityLabel="Deskripsi rule"
+              />
+            )}
+          />
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Kategori <Text style={styles.optional}>(opsional)</Text></Text>
-          <Controller control={control} name="category" render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput style={styles.input} placeholder="Contoh: Kehadiran, Etika"
-              placeholderTextColor="#9CA3AF" onChangeText={onChange} onBlur={onBlur} value={value}
-              accessibilityLabel="Kategori rule" />
-          )} />
+          <Text style={styles.label}>
+            Kategori <Text style={styles.optional}>(opsional)</Text>
+          </Text>
+          <Controller
+            control={control}
+            name="category"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <TextInput
+                style={styles.input}
+                placeholder="Contoh: Kehadiran, Etika"
+                placeholderTextColor="#9CA3AF"
+                onChangeText={onChange}
+                onBlur={onBlur}
+                value={value}
+                accessibilityLabel="Kategori rule"
+              />
+            )}
+          />
         </View>
 
         <View style={styles.switchRow}>
@@ -92,18 +149,38 @@ export default function CreateRuleScreen() {
             <Text style={styles.label}>Admin Only</Text>
             <Text style={styles.switchDesc}>Hanya visible untuk admin room</Text>
           </View>
-          <Controller control={control} name="admin_only" render={({ field: { onChange, value } }) => (
-            <Switch value={value} onValueChange={onChange} accessibilityLabel="Toggle admin only" />
-          )} />
+          <Controller
+            control={control}
+            name="admin_only"
+            render={({ field: { onChange, value } }) => (
+              <Switch
+                value={value}
+                onValueChange={onChange}
+                accessibilityLabel="Toggle admin only"
+              />
+            )}
+          />
         </View>
 
-        <TouchableOpacity style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
-          onPress={handleSubmit(onSubmit)} disabled={isSubmitting}
-          accessibilityLabel="Simpan rule" accessibilityRole="button">
-          {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Simpan Rule</Text>}
+        <TouchableOpacity
+          style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+          onPress={handleSubmit(onSubmit)}
+          disabled={isSubmitting}
+          accessibilityLabel="Simpan rule"
+          accessibilityRole="button"
+        >
+          {isSubmitting ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitText}>Simpan Rule</Text>
+          )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()} accessibilityLabel="Batal">
+        <TouchableOpacity
+          style={styles.cancelBtn}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Batal"
+        >
           <Text style={styles.cancelText}>Batal</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -119,13 +196,36 @@ const styles = StyleSheet.create({
   label: { fontSize: 14, fontWeight: '500', color: '#374151', marginBottom: 6 },
   required: { color: '#EF4444' },
   optional: { color: '#9CA3AF', fontWeight: '400' },
-  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 11, fontSize: 15, color: '#111827', backgroundColor: '#F9FAFB' },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: '#111827',
+    backgroundColor: '#F9FAFB',
+  },
   inputError: { borderColor: '#EF4444' },
   textArea: { height: 80, textAlignVertical: 'top' },
   errorText: { fontSize: 12, color: '#EF4444', marginTop: 4 },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F9FAFB', borderRadius: 10, padding: 14, marginBottom: 24 },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 24,
+  },
   switchDesc: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
-  submitBtn: { backgroundColor: '#3B82F6', borderRadius: 8, paddingVertical: 14, alignItems: 'center', marginBottom: 10 },
+  submitBtn: {
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   submitBtnDisabled: { backgroundColor: '#93C5FD' },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   cancelBtn: { alignItems: 'center', paddingVertical: 10 },

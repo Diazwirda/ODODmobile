@@ -116,13 +116,10 @@ export default function CompanyTutorialScreen() {
 
   // ── Carousel scroll handling ──────────────────────────────────────────────
 
-  const scrollToIndex = useCallback(
-    (index: number) => {
-      scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
-      setCurrentIndex(index);
-    },
-    [],
-  );
+  const scrollToIndex = useCallback((index: number) => {
+    scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: true });
+    setCurrentIndex(index);
+  }, []);
 
   const handleNext = useCallback(() => {
     if (isLastSlide) {
@@ -139,7 +136,7 @@ export default function CompanyTutorialScreen() {
         setCurrentIndex(newIndex);
       }
     },
-    [currentIndex],
+    [currentIndex]
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -206,9 +203,7 @@ export default function CompanyTutorialScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.nextButtonText}>
-              {isLastSlide ? 'Selesai' : 'Selanjutnya'}
-            </Text>
+            <Text style={styles.nextButtonText}>{isLastSlide ? 'Selesai' : 'Selanjutnya'}</Text>
           )}
         </TouchableOpacity>
       </View>

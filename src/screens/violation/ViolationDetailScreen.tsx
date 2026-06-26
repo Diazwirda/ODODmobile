@@ -4,11 +4,20 @@
  */
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal, TextInput,
-  Alert, ActivityIndicator, Image, StyleSheet, SafeAreaView,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  SafeAreaView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+
 import type { RouteProp } from '@react-navigation/native';
 import { z } from 'zod';
 
@@ -56,21 +65,9 @@ export default function ViolationDetailScreen() {
   // Get violation from store — the list screen navigates without params, so use first pending or last
   const violation: Violation | undefined = violations[0];
 
-  if (!violation || !activeRoom) {
-    return (
-      <SafeAreaView style={styles.centered}>
-        <Text style={styles.emptyText}>Data laporan tidak ditemukan.</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Kembali</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
-    );
-  }
-
-  const canVerify = isAdmin(activeRoomRole) && violation.status === 'pending';
-
+  // Define callbacks before early return (React Hooks Rule)
   const handleVerify = useCallback(async () => {
-    if (!activeRoom) return;
+    if (!activeRoom || !violation) return;
     setIsSubmitting(true);
     try {
       await updateViolationStatus(activeRoom.id, violation.id, { status: 'verified' });
@@ -81,7 +78,7 @@ export default function ViolationDetailScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [activeRoom, violation.id, updateViolationStatus, navigation]);
+  }, [activeRoom, violation, updateViolationStatus, navigation]);
 
   const handleRejectSubmit = useCallback(async () => {
     const result = rejectSchema.safeParse(rejectReason);
@@ -89,7 +86,7 @@ export default function ViolationDetailScreen() {
       setRejectError(result.error.errors[0].message);
       return;
     }
-    if (!activeRoom) return;
+    if (!activeRoom || !violation) return;
     setIsSubmitting(true);
     try {
       await updateViolationStatus(activeRoom.id, violation.id, {
@@ -104,13 +101,28 @@ export default function ViolationDetailScreen() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [rejectReason, activeRoom, violation.id, updateViolationStatus, navigation]);
+  }, [rejectReason, activeRoom, violation, updateViolationStatus, navigation]);
+
+  if (!violation || !activeRoom) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Text style={styles.emptyText}>Data laporan tidak ditemukan.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backBtnText}>← Kembali</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const canVerify = isAdmin(activeRoomRole) && violation.status === 'pending';
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Status */}
-        <View style={[styles.statusBanner, { backgroundColor: STATUS_COLOR[violation.status] + '18' }]}>
+        <View
+          style={[styles.statusBanner, { backgroundColor: STATUS_COLOR[violation.status] + '18' }]}
+        >
           <Text style={[styles.statusText, { color: STATUS_COLOR[violation.status] }]}>
             {STATUS_LABEL[violation.status]}
           </Text>
@@ -142,7 +154,7 @@ export default function ViolationDetailScreen() {
         {/* Violators */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Pelanggar</Text>
-          {violation.violators.map(v => (
+          {violation.violators.map((v) => (
             <View key={v.id} style={styles.userRow}>
               <AvatarSmall name={v.name} photo={v.photo} />
               <View>
@@ -190,7 +202,11 @@ export default function ViolationDetailScreen() {
         <Text style={styles.date}>
           Dilaporkan:{' '}
           {new Date(violation.created_at).toLocaleDateString('id-ID', {
-            day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
           })}
         </Text>
 
@@ -202,15 +218,21 @@ export default function ViolationDetailScreen() {
               onPress={handleVerify}
               disabled={isSubmitting}
               accessibilityLabel="Verifikasi laporan"
-              accessibilityRole="button">
-              {isSubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.actionBtnText}>Verifikasi</Text>}
+              accessibilityRole="button"
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.actionBtnText}>Verifikasi</Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.rejectBtn]}
               onPress={() => setRejectModalVisible(true)}
               disabled={isSubmitting}
               accessibilityLabel="Tolak laporan"
-              accessibilityRole="button">
+              accessibilityRole="button"
+            >
               <Text style={[styles.actionBtnText, { color: '#EF4444' }]}>Tolak</Text>
             </TouchableOpacity>
           </View>
@@ -218,8 +240,17 @@ export default function ViolationDetailScreen() {
       </ScrollView>
 
       {/* Reject modal */}
-      <Modal visible={rejectModalVisible} animationType="slide" transparent onRequestClose={() => setRejectModalVisible(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setRejectModalVisible(false)}>
+      <Modal
+        visible={rejectModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setRejectModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setRejectModalVisible(false)}
+        >
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Alasan Penolakan</Text>
             <TextInput
@@ -229,19 +260,30 @@ export default function ViolationDetailScreen() {
               multiline
               numberOfLines={4}
               value={rejectReason}
-              onChangeText={t => { setRejectReason(t); setRejectError(''); }}
+              onChangeText={(t) => {
+                setRejectReason(t);
+                setRejectError('');
+              }}
               accessibilityLabel="Alasan penolakan"
             />
             {rejectError ? <Text style={styles.errorText}>{rejectError}</Text> : null}
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => setRejectModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.modalCancel}
+                onPress={() => setRejectModalVisible(false)}
+              >
                 <Text style={styles.modalCancelText}>Batal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalSubmit, isSubmitting && { opacity: 0.6 }]}
                 onPress={handleRejectSubmit}
-                disabled={isSubmitting}>
-                {isSubmitting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.modalSubmitText}>Tolak Laporan</Text>}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.modalSubmitText}>Tolak Laporan</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -256,17 +298,36 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { padding: 16, paddingBottom: 40 },
   emptyText: { fontSize: 15, color: '#9CA3AF', marginBottom: 16 },
-  backBtn: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#3B82F6', borderRadius: 8 },
+  backBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+  },
   backBtnText: { color: '#fff', fontWeight: '600' },
   statusBanner: { borderRadius: 8, padding: 10, alignItems: 'center', marginBottom: 16 },
   statusText: { fontSize: 14, fontWeight: '700' },
   section: { backgroundColor: '#fff', borderRadius: 12, padding: 14, marginBottom: 12 },
-  sectionLabel: { fontSize: 11, color: '#9CA3AF', fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
+  sectionLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
   sectionValue: { fontSize: 15, color: '#111827', lineHeight: 22 },
   sectionSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 },
   avatar: { width: 36, height: 36, borderRadius: 18 },
-  avatarFallback: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
+  avatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   avatarInitials: { fontSize: 13, fontWeight: '700', color: '#1D4ED8' },
   userName: { fontSize: 14, fontWeight: '600', color: '#111827' },
   userDept: { fontSize: 12, color: '#9CA3AF' },
@@ -275,19 +336,55 @@ const styles = StyleSheet.create({
   rejectReasonText: { fontSize: 14, color: '#991B1B', lineHeight: 20 },
   date: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', marginVertical: 8 },
   actionRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
-  actionBtn: { flex: 1, borderRadius: 10, paddingVertical: 14, alignItems: 'center', justifyContent: 'center' },
+  actionBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   verifyBtn: { backgroundColor: '#10B981' },
   rejectBtn: { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA' },
   actionBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 36,
+  },
   modalTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 14 },
-  modalInput: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, fontSize: 14, color: '#111827', textAlignVertical: 'top', minHeight: 100, backgroundColor: '#F9FAFB', marginBottom: 4 },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#111827',
+    textAlignVertical: 'top',
+    minHeight: 100,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 4,
+  },
   inputError: { borderColor: '#EF4444' },
   errorText: { fontSize: 12, color: '#EF4444', marginBottom: 8 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  modalCancel: { flex: 1, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  modalCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   modalCancelText: { fontSize: 14, color: '#6B7280', fontWeight: '600' },
-  modalSubmit: { flex: 1, backgroundColor: '#EF4444', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  modalSubmit: {
+    flex: 1,
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   modalSubmitText: { fontSize: 14, color: '#fff', fontWeight: '600' },
 });

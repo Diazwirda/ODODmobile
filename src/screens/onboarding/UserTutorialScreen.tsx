@@ -113,23 +113,18 @@ export default function UserTutorialScreen() {
 
   const handleScroll = useCallback(
     (event: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const newIndex = Math.round(
-        event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
-      );
+      const newIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
       if (newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
       }
     },
-    [currentIndex],
+    [currentIndex]
   );
 
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      accessibilityLabel="Tutorial cara melaporkan pelanggaran"
-    >
+    <SafeAreaView style={styles.safeArea} accessibilityLabel="Tutorial cara melaporkan pelanggaran">
       {/* Skip button — top-right */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -156,10 +151,7 @@ export default function UserTutorialScreen() {
       >
         {SLIDES.map((slide) => (
           <View key={slide.id} style={styles.slide}>
-            <Text
-              style={styles.slideEmoji}
-              accessibilityLabel={`Ikon slide ${slide.id}`}
-            >
+            <Text style={styles.slideEmoji} accessibilityLabel={`Ikon slide ${slide.id}`}>
               {slide.emoji}
             </Text>
             <Text style={styles.slideTitle} accessibilityRole="header">
@@ -171,10 +163,7 @@ export default function UserTutorialScreen() {
       </ScrollView>
 
       {/* Progress dots */}
-      <View
-        style={styles.dotsContainer}
-        accessibilityLabel="Indikator kemajuan tutorial spotting"
-      >
+      <View style={styles.dotsContainer} accessibilityLabel="Indikator kemajuan tutorial spotting">
         {SLIDES.map((slide, index) => (
           <View
             key={slide.id}
@@ -198,9 +187,7 @@ export default function UserTutorialScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.nextButtonText}>
-              {isLastSlide ? 'Selesai' : 'Selanjutnya'}
-            </Text>
+            <Text style={styles.nextButtonText}>{isLastSlide ? 'Selesai' : 'Selanjutnya'}</Text>
           )}
         </TouchableOpacity>
       </View>

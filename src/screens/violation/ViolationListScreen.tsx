@@ -4,8 +4,13 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, SafeAreaView,
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -30,11 +35,17 @@ const STATUS_COLOR: Record<string, string> = {
 
 function ViolationCard({ item, onPress }: { item: Violation; onPress: () => void }) {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}
+    <TouchableOpacity
+      style={styles.card}
+      onPress={onPress}
+      activeOpacity={0.7}
       accessibilityLabel={`Violation: ${item.rule.name}. Status: ${STATUS_LABEL[item.status]}`}
-      accessibilityRole="button">
+      accessibilityRole="button"
+    >
       <View style={styles.cardHeader}>
-        <Text style={styles.ruleName} numberOfLines={1}>{item.rule.name}</Text>
+        <Text style={styles.ruleName} numberOfLines={1}>
+          {item.rule.name}
+        </Text>
         <View style={[styles.statusBadge, { backgroundColor: STATUS_COLOR[item.status] + '22' }]}>
           <Text style={[styles.statusText, { color: STATUS_COLOR[item.status] }]}>
             {STATUS_LABEL[item.status]}
@@ -42,10 +53,14 @@ function ViolationCard({ item, onPress }: { item: Violation; onPress: () => void
         </View>
       </View>
       <Text style={styles.meta}>
-        Pelapor: {item.reporter.name} · Pelanggar: {item.violators.map(v => v.name).join(', ')}
+        Pelapor: {item.reporter.name} · Pelanggar: {item.violators.map((v) => v.name).join(', ')}
       </Text>
       <Text style={styles.date}>
-        {new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {new Date(item.created_at).toLocaleDateString('id-ID', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })}
       </Text>
     </TouchableOpacity>
   );
@@ -61,10 +76,13 @@ export default function ViolationListScreen() {
     if (activeRoom) fetchViolations(activeRoom.id);
   }, [activeRoom, fetchViolations]);
 
-  const handleTabChange = useCallback((tab: 'all' | 'mine') => {
-    setActiveTab(tab);
-    if (tab === 'mine' && activeRoom) fetchMyReports(activeRoom.id);
-  }, [activeRoom, fetchMyReports]);
+  const handleTabChange = useCallback(
+    (tab: 'all' | 'mine') => {
+      setActiveTab(tab);
+      if (tab === 'mine' && activeRoom) fetchMyReports(activeRoom.id);
+    },
+    [activeRoom, fetchMyReports]
+  );
 
   const data = activeTab === 'all' ? violations : myReports;
 
@@ -72,27 +90,39 @@ export default function ViolationListScreen() {
     <SafeAreaView style={styles.container}>
       {/* Tabs */}
       <View style={styles.tabs}>
-        <TouchableOpacity style={[styles.tab, activeTab === 'all' && styles.tabActive]}
-          onPress={() => handleTabChange('all')} accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'all' }}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'all' && styles.tabActive]}
+          onPress={() => handleTabChange('all')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'all' }}
+        >
           <Text style={[styles.tabText, activeTab === 'all' && styles.tabTextActive]}>Semua</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.tab, activeTab === 'mine' && styles.tabActive]}
-          onPress={() => handleTabChange('mine')} accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'mine' }}>
-          <Text style={[styles.tabText, activeTab === 'mine' && styles.tabTextActive]}>Laporan Saya</Text>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'mine' && styles.tabActive]}
+          onPress={() => handleTabChange('mine')}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'mine' }}
+        >
+          <Text style={[styles.tabText, activeTab === 'mine' && styles.tabTextActive]}>
+            Laporan Saya
+          </Text>
         </TouchableOpacity>
       </View>
 
       {isLoading && data.length === 0 ? (
-        <View style={styles.centered}><ActivityIndicator size="large" color="#3B82F6" /></View>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+        </View>
       ) : (
         <FlatList
           data={data}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={(item) => String(item.id)}
           renderItem={({ item }) => (
-            <ViolationCard item={item}
-              onPress={() => navigation.navigate('ViolationDetailScreen')} />
+            <ViolationCard
+              item={item}
+              onPress={() => navigation.navigate('ViolationDetailScreen')}
+            />
           )}
           contentContainerStyle={data.length === 0 ? styles.emptyContainer : styles.list}
           ListEmptyComponent={
@@ -111,7 +141,12 @@ export default function ViolationListScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E7EB' },
+  tabs: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+  },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#3B82F6' },
   tabText: { fontSize: 14, color: '#6B7280' },
@@ -121,8 +156,22 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', padding: 48 },
   emptyText: { fontSize: 14, color: '#9CA3AF' },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
   ruleName: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1, marginRight: 8 },
   statusBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
   statusText: { fontSize: 11, fontWeight: '600' },

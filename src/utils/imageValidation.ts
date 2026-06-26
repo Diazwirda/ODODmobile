@@ -4,7 +4,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function validateImageFile(
   file: ImageFile,
-  maxSizeMB: number,
+  maxSizeMB: number
 ): { valid: boolean; error?: string } {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return { valid: false, error: 'Format foto harus jpg, jpeg, png, atau webp.' };

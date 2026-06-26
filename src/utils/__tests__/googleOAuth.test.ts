@@ -38,45 +38,42 @@ describe('extractGoogleToken', () => {
     const safeTokenArb = fc
       .string({ minLength: 1 })
       .filter(
-        s =>
+        (s) =>
           !s.includes('#') &&
           !s.includes('&') &&
           !s.includes('=') &&
           !s.includes('+') &&
           !s.includes('%') &&
-          !s.includes('\0'),
+          !s.includes('\0')
       );
 
     it('URL with #google_token=TOKEN always returns TOKEN', () => {
       fc.assert(
-        fc.property(safeTokenArb, token => {
+        fc.property(safeTokenArb, (token) => {
           const url = `https://example.com/callback#google_token=${token}`;
           return extractGoogleToken(url) === token;
         }),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
     it('URL with ?google_error= (no fragment) always returns null', () => {
       fc.assert(
-        fc.property(
-          fc.constantFrom('auth_failed', 'no_email', 'unknown'),
-          errorCode => {
-            const url = `https://example.com/callback?google_error=${errorCode}`;
-            return extractGoogleToken(url) === null;
-          },
-        ),
-        { numRuns: 100 },
+        fc.property(fc.constantFrom('auth_failed', 'no_email', 'unknown'), (errorCode) => {
+          const url = `https://example.com/callback?google_error=${errorCode}`;
+          return extractGoogleToken(url) === null;
+        }),
+        { numRuns: 100 }
       );
     });
 
     it('URL with no fragment always returns null', () => {
       fc.assert(
         fc.property(
-          fc.webUrl().filter(u => !u.includes('#')),
-          url => extractGoogleToken(url) === null,
+          fc.webUrl().filter((u) => !u.includes('#')),
+          (url) => extractGoogleToken(url) === null
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });

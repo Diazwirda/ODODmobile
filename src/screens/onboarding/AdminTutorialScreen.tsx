@@ -112,23 +112,18 @@ export default function AdminTutorialScreen() {
 
   const handleScroll = useCallback(
     (event: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const newIndex = Math.round(
-        event.nativeEvent.contentOffset.x / SCREEN_WIDTH,
-      );
+      const newIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
       if (newIndex !== currentIndex) {
         setCurrentIndex(newIndex);
       }
     },
-    [currentIndex],
+    [currentIndex]
   );
 
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView
-      style={styles.safeArea}
-      accessibilityLabel="Tutorial panduan admin room"
-    >
+    <SafeAreaView style={styles.safeArea} accessibilityLabel="Tutorial panduan admin room">
       {/* Skip button — top-right */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -155,10 +150,7 @@ export default function AdminTutorialScreen() {
       >
         {SLIDES.map((slide) => (
           <View key={slide.id} style={styles.slide}>
-            <Text
-              style={styles.slideEmoji}
-              accessibilityLabel={`Ikon slide ${slide.id}`}
-            >
+            <Text style={styles.slideEmoji} accessibilityLabel={`Ikon slide ${slide.id}`}>
               {slide.emoji}
             </Text>
             <Text style={styles.slideTitle} accessibilityRole="header">
@@ -170,10 +162,7 @@ export default function AdminTutorialScreen() {
       </ScrollView>
 
       {/* Progress dots */}
-      <View
-        style={styles.dotsContainer}
-        accessibilityLabel="Indikator kemajuan tutorial admin"
-      >
+      <View style={styles.dotsContainer} accessibilityLabel="Indikator kemajuan tutorial admin">
         {SLIDES.map((slide, index) => (
           <View
             key={slide.id}
@@ -188,18 +177,14 @@ export default function AdminTutorialScreen() {
         <TouchableOpacity
           onPress={handleNext}
           disabled={isSubmitting}
-          accessibilityLabel={
-            isLastSlide ? 'Selesai tutorial admin' : 'Lanjut ke slide berikutnya'
-          }
+          accessibilityLabel={isLastSlide ? 'Selesai tutorial admin' : 'Lanjut ke slide berikutnya'}
           accessibilityRole="button"
           style={[styles.nextButton, isSubmitting && styles.nextButtonDisabled]}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.nextButtonText}>
-              {isLastSlide ? 'Selesai' : 'Selanjutnya'}
-            </Text>
+            <Text style={styles.nextButtonText}>{isLastSlide ? 'Selesai' : 'Selanjutnya'}</Text>
           )}
         </TouchableOpacity>
       </View>

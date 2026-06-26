@@ -4,7 +4,13 @@
  */
 import React, { useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, SafeAreaView,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  StyleSheet,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -36,7 +42,9 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title} accessibilityRole="header">Dashboard</Text>
+        <Text style={styles.title} accessibilityRole="header">
+          Dashboard
+        </Text>
         <Text style={styles.subtitle}>{activeRoom?.name ?? ''}</Text>
 
         {isLoading && !stats ? (
@@ -47,16 +55,27 @@ export default function DashboardScreen() {
           <>
             {/* Stats grid */}
             <View style={styles.grid}>
-              <StatCard label="Laporan Hari Ini" value={stats?.reports_today ?? 0} color="#3B82F6" />
-              <StatCard label="Laporan Minggu Ini" value={stats?.reports_this_week ?? 0} color="#8B5CF6" />
+              <StatCard
+                label="Laporan Hari Ini"
+                value={stats?.reports_today ?? 0}
+                color="#3B82F6"
+              />
+              <StatCard
+                label="Laporan Minggu Ini"
+                value={stats?.reports_this_week ?? 0}
+                color="#8B5CF6"
+              />
               <StatCard label="Total Violations" value={stats?.total_violation ?? 0} />
               <StatCard label="Total Transaksi Poin" value={stats?.total_points_log ?? 0} />
             </View>
 
             {/* Leaderboard CTA */}
-            <TouchableOpacity style={styles.leaderboardBtn}
+            <TouchableOpacity
+              style={styles.leaderboardBtn}
               onPress={() => navigation.navigate('LeaderboardScreen')}
-              accessibilityLabel="Lihat leaderboard" accessibilityRole="button">
+              accessibilityLabel="Lihat leaderboard"
+              accessibilityRole="button"
+            >
               <View>
                 <Text style={styles.leaderboardBtnTitle}>🏆 Leaderboard</Text>
                 <Text style={styles.leaderboardBtnSub}>Lihat peringkat anggota room</Text>
@@ -77,10 +96,34 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: '700', color: '#111827', marginBottom: 2 },
   subtitle: { fontSize: 13, color: '#9CA3AF', marginBottom: 20 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
-  statCard: { flex: 1, minWidth: '45%', backgroundColor: '#fff', borderRadius: 12, padding: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1 },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
+  },
   statValue: { fontSize: 28, fontWeight: '800', color: '#111827', marginBottom: 4 },
   statLabel: { fontSize: 12, color: '#9CA3AF', textAlign: 'center' },
-  leaderboardBtn: { backgroundColor: '#fff', borderRadius: 14, padding: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  leaderboardBtn: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    padding: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   leaderboardBtnTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 2 },
   leaderboardBtnSub: { fontSize: 13, color: '#9CA3AF' },
   leaderboardBtnArrow: { fontSize: 24, color: '#D1D5DB' },

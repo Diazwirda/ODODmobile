@@ -20,10 +20,7 @@ export function normalizeError(error: AxiosError): NormalizedError {
     401: 'Sesi Anda telah berakhir. Silakan login kembali.',
     403: 'Anda tidak memiliki akses untuk melakukan aksi ini.',
     404: 'Data yang diminta tidak ditemukan.',
-    422:
-      typeof data?.message === 'string'
-        ? data.message
-        : 'Data yang dikirimkan tidak valid.',
+    422: typeof data?.message === 'string' ? data.message : 'Data yang dikirimkan tidak valid.',
     502: 'Server sedang bermasalah. Silakan coba lagi beberapa saat lagi.',
   };
 
@@ -32,9 +29,7 @@ export function normalizeError(error: AxiosError): NormalizedError {
     : 'Tidak ada koneksi internet. Periksa jaringan Anda.';
 
   const validationErrors =
-    data?.errors != null &&
-    typeof data.errors === 'object' &&
-    !Array.isArray(data.errors)
+    data?.errors != null && typeof data.errors === 'object' && !Array.isArray(data.errors)
       ? (data.errors as Record<string, string[]>)
       : null;
 

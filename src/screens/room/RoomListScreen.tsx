@@ -27,13 +27,7 @@ type Nav = StackNavigationProp<AppStackParamList>;
 
 // ─── Room Card ────────────────────────────────────────────────────────────────
 
-function RoomCard({
-  room,
-  onPress,
-}: {
-  room: Room;
-  onPress: () => void;
-}) {
+function RoomCard({ room, onPress }: { room: Room; onPress: () => void }) {
   const joinedDate = new Date(room.joined_at).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -59,9 +53,7 @@ function RoomCard({
           />
         ) : (
           <View style={styles.avatarFallback}>
-            <Text style={styles.avatarInitials}>
-              {getInitials(room.name)}
-            </Text>
+            <Text style={styles.avatarInitials}>{getInitials(room.name)}</Text>
           </View>
         )}
       </View>
@@ -116,9 +108,12 @@ export default function RoomListScreen() {
   const handleSelectRoom = useCallback(
     (room: Room) => {
       setActiveRoom(room);
-      navigation.navigate('RoomTabNavigator', { screen: 'HomeTab', params: { screen: 'RoomHomeScreen' } });
+      navigation.navigate('RoomTabNavigator', {
+        screen: 'HomeTab',
+        params: { screen: 'RoomHomeScreen' },
+      });
     },
-    [navigation, setActiveRoom],
+    [navigation, setActiveRoom]
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -153,29 +148,21 @@ export default function RoomListScreen() {
       {/* Loading */}
       {isLoading && rooms.length === 0 ? (
         <View style={styles.centered}>
-          <ActivityIndicator
-            size="large"
-            color="#3B82F6"
-            accessibilityLabel="Memuat daftar room"
-          />
+          <ActivityIndicator size="large" color="#3B82F6" accessibilityLabel="Memuat daftar room" />
         </View>
       ) : (
         <FlatList
           data={rooms}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => (
-            <RoomCard room={item} onPress={() => handleSelectRoom(item)} />
-          )}
-          contentContainerStyle={
-            rooms.length === 0 ? styles.emptyContainer : styles.listContent
-          }
+          renderItem={({ item }) => <RoomCard room={item} onPress={() => handleSelectRoom(item)} />}
+          contentContainerStyle={rooms.length === 0 ? styles.emptyContainer : styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Text style={styles.emptyEmoji}>🏠</Text>
               <Text style={styles.emptyTitle}>Belum ada room</Text>
               <Text style={styles.emptyDescription}>
-                Anda belum bergabung ke room manapun.{'\n'}Tekan &apos;Buat
-                Room&apos; atau &apos;Gabung Room&apos; untuk memulai.
+                Anda belum bergabung ke room manapun.{'\n'}Tekan &apos;Buat Room&apos; atau
+                &apos;Gabung Room&apos; untuk memulai.
               </Text>
             </View>
           }

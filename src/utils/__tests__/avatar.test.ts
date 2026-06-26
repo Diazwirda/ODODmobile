@@ -34,22 +34,22 @@ describe('getInitials', () => {
   describe('P7 — getInitials property tests', () => {
     it('same name always returns same initials (deterministic)', () => {
       fc.assert(
-        fc.property(fc.string(), name => {
+        fc.property(fc.string(), (name) => {
           return getInitials(name) === getInitials(name);
         }),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
     it('non-empty trimmed name never returns empty initials', () => {
       fc.assert(
         fc.property(
-          fc.string().filter(s => s.trim().length > 0),
-          name => {
+          fc.string().filter((s) => s.trim().length > 0),
+          (name) => {
             return getInitials(name).length > 0;
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });

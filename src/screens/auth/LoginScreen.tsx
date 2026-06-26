@@ -81,10 +81,7 @@ export default function LoginScreen({ navigation }: Props) {
         if (!validationErrors.email && !validationErrors.password) {
           setGeneralError(normalized.message);
         }
-      } else if (
-        normalized.statusCode === 502 ||
-        normalized.statusCode === null
-      ) {
+      } else if (normalized.statusCode === 502 || normalized.statusCode === null) {
         // 502 = server down, null = network error — show Alert (Req 14.1, 14.2)
         Alert.alert('Kesalahan', normalized.message);
       } else {
@@ -136,14 +133,11 @@ export default function LoginScreen({ navigation }: Props) {
       } else {
         Alert.alert(
           'Browser Tidak Tersedia',
-          'Tidak dapat membuka browser untuk login dengan Google.',
+          'Tidak dapat membuka browser untuk login dengan Google.'
         );
       }
     } catch {
-      Alert.alert(
-        'Kesalahan',
-        'Gagal membuka halaman login Google. Silakan coba lagi.',
-      );
+      Alert.alert('Kesalahan', 'Gagal membuka halaman login Google. Silakan coba lagi.');
     }
   };
 
@@ -159,17 +153,12 @@ export default function LoginScreen({ navigation }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         {/* Title */}
-        <Text className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          Masuk
-        </Text>
+        <Text className="text-3xl font-bold text-gray-900 mb-8 text-center">Masuk</Text>
 
         {/* General error banner */}
         {generalError ? (
           <View className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
-            <Text
-              className="text-red-700 text-sm"
-              accessibilityLabel={`Error: ${generalError}`}
-            >
+            <Text className="text-red-700 text-sm" accessibilityLabel={`Error: ${generalError}`}>
               {generalError}
             </Text>
           </View>
@@ -184,9 +173,7 @@ export default function LoginScreen({ navigation }: Props) {
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 className={`border rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
-                  errors.email
-                    ? 'border-red-500'
-                    : 'border-gray-300'
+                  errors.email ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="contoh@email.com"
                 placeholderTextColor="#9ca3af"
@@ -213,18 +200,14 @@ export default function LoginScreen({ navigation }: Props) {
 
         {/* Password field */}
         <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-1">
-            Password
-          </Text>
+          <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
           <Controller
             control={control}
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
                 className={`border rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
-                  errors.password
-                    ? 'border-red-500'
-                    : 'border-gray-300'
+                  errors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Minimal 8 karakter"
                 placeholderTextColor="#9ca3af"
@@ -272,9 +255,7 @@ export default function LoginScreen({ navigation }: Props) {
           accessibilityLabel="Masuk dengan Google"
           accessibilityRole="button"
         >
-          <Text className="text-gray-700 font-semibold text-base">
-            Masuk dengan Google
-          </Text>
+          <Text className="text-gray-700 font-semibold text-base">Masuk dengan Google</Text>
         </Pressable>
 
         {/* Navigate to RegisterScreen */}

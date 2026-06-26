@@ -31,9 +31,8 @@ import type { StackScreenProps } from '@react-navigation/stack';
 
 import apiClient from '@api/client';
 import { useAuthStore } from '@stores/authStore';
-import type { Department } from '@/types/common';
+import type { Department, NormalizedError } from '@/types/common';
 import type { AuthStackParamList } from '@navigation/types';
-import type { NormalizedError } from '@/types/common';
 
 // ─── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -135,10 +134,7 @@ export default function RegisterScreen({ navigation }: Props) {
       } catch (error) {
         const normalizedError = error as NormalizedError;
 
-        if (
-          normalizedError.statusCode === 422 &&
-          normalizedError.validationErrors
-        ) {
+        if (normalizedError.statusCode === 422 && normalizedError.validationErrors) {
           // Apply per-field validation errors from server
           const fieldMap: Record<string, keyof RegisterFormValues> = {
             name: 'name',
@@ -149,35 +145,30 @@ export default function RegisterScreen({ navigation }: Props) {
             position: 'position',
           };
 
-          Object.entries(normalizedError.validationErrors).forEach(
-            ([field, messages]) => {
-              const formField = fieldMap[field];
-              if (formField) {
-                setError(formField, {
-                  type: 'server',
-                  message: messages[0],
-                });
-              }
-            },
-          );
+          Object.entries(normalizedError.validationErrors).forEach(([field, messages]) => {
+            const formField = fieldMap[field];
+            if (formField) {
+              setError(formField, {
+                type: 'server',
+                message: messages[0],
+              });
+            }
+          });
         } else {
           Alert.alert(
             'Pendaftaran Gagal',
-            normalizedError.message ??
-              'Terjadi kesalahan. Silakan coba lagi.',
+            normalizedError.message ?? 'Terjadi kesalahan. Silakan coba lagi.'
           );
         }
       }
     },
-    [authRegister, setError],
+    [authRegister, setError]
   );
 
   // ─── Department display label ─────────────────────────────────────────────
 
   const departmentLabel =
-    departments.find((d) => d.name === selectedDepartment)?.name ??
-    selectedDepartment ??
-    '';
+    departments.find((d) => d.name === selectedDepartment)?.name ?? selectedDepartment ?? '';
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -198,9 +189,7 @@ export default function RegisterScreen({ navigation }: Props) {
           <Text style={styles.title} accessibilityRole="header">
             Buat Akun Baru
           </Text>
-          <Text style={styles.subtitle}>
-            Isi data diri Anda untuk mendaftar
-          </Text>
+          <Text style={styles.subtitle}>Isi data diri Anda untuk mendaftar</Text>
         </View>
 
         {/* ─── Nama Lengkap ────────────────────────────────────────────────── */}
@@ -268,10 +257,7 @@ export default function RegisterScreen({ navigation }: Props) {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[
-                  styles.input,
-                  errors.password ? styles.inputError : null,
-                ]}
+                style={[styles.input, errors.password ? styles.inputError : null]}
                 placeholder="Minimal 8 karakter"
                 placeholderTextColor="#9CA3AF"
                 onChangeText={onChange}
@@ -300,10 +286,7 @@ export default function RegisterScreen({ navigation }: Props) {
             name="password_confirmation"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[
-                  styles.input,
-                  errors.password_confirmation ? styles.inputError : null,
-                ]}
+                style={[styles.input, errors.password_confirmation ? styles.inputError : null]}
                 placeholder="Ulangi password"
                 placeholderTextColor="#9CA3AF"
                 onChangeText={onChange}
@@ -327,8 +310,7 @@ export default function RegisterScreen({ navigation }: Props) {
         {/* ─── Departemen ──────────────────────────────────────────────────── */}
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>
-            Departemen{' '}
-            <Text style={styles.optionalText}>(opsional)</Text>
+            Departemen <Text style={styles.optionalText}>(opsional)</Text>
           </Text>
 
           {departmentsLoading ? (
@@ -349,11 +331,7 @@ export default function RegisterScreen({ navigation }: Props) {
                 accessibilityRole="button"
               >
                 <Text
-                  style={
-                    departmentLabel
-                      ? styles.pickerValueText
-                      : styles.pickerPlaceholderText
-                  }
+                  style={departmentLabel ? styles.pickerValueText : styles.pickerPlaceholderText}
                 >
                   {departmentLabel || 'Pilih departemen'}
                 </Text>
@@ -378,10 +356,7 @@ export default function RegisterScreen({ navigation }: Props) {
               name="department"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  style={[
-                    styles.input,
-                    errors.department ? styles.inputError : null,
-                  ]}
+                  style={[styles.input, errors.department ? styles.inputError : null]}
                   placeholder="Masukkan nama departemen"
                   placeholderTextColor="#9CA3AF"
                   onChangeText={onChange}
@@ -412,10 +387,7 @@ export default function RegisterScreen({ navigation }: Props) {
             name="position"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[
-                  styles.input,
-                  errors.position ? styles.inputError : null,
-                ]}
+                style={[styles.input, errors.position ? styles.inputError : null]}
                 placeholder="Masukkan jabatan Anda"
                 placeholderTextColor="#9CA3AF"
                 onChangeText={onChange}
@@ -437,10 +409,7 @@ export default function RegisterScreen({ navigation }: Props) {
 
         {/* ─── Daftar Button ───────────────────────────────────────────────── */}
         <TouchableOpacity
-          style={[
-            styles.submitButton,
-            isButtonDisabled ? styles.submitButtonDisabled : null,
-          ]}
+          style={[styles.submitButton, isButtonDisabled ? styles.submitButtonDisabled : null]}
           onPress={handleSubmit(onSubmit)}
           disabled={isButtonDisabled}
           accessibilityLabel="Daftar"
@@ -462,8 +431,7 @@ export default function RegisterScreen({ navigation }: Props) {
           accessibilityRole="button"
         >
           <Text style={styles.loginLinkText}>
-            Sudah punya akun?{' '}
-            <Text style={styles.loginLinkBold}>Masuk</Text>
+            Sudah punya akun? <Text style={styles.loginLinkBold}>Masuk</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -500,9 +468,7 @@ export default function RegisterScreen({ navigation }: Props) {
                 <TouchableOpacity
                   style={[
                     styles.modalItem,
-                    selectedDepartment === item.name
-                      ? styles.modalItemSelected
-                      : null,
+                    selectedDepartment === item.name ? styles.modalItemSelected : null,
                   ]}
                   onPress={() => {
                     setValue('department', item.name, {
@@ -516,9 +482,7 @@ export default function RegisterScreen({ navigation }: Props) {
                   <Text
                     style={[
                       styles.modalItemText,
-                      selectedDepartment === item.name
-                        ? styles.modalItemTextSelected
-                        : null,
+                      selectedDepartment === item.name ? styles.modalItemTextSelected : null,
                     ]}
                   >
                     {item.name}
@@ -528,9 +492,7 @@ export default function RegisterScreen({ navigation }: Props) {
                   ) : null}
                 </TouchableOpacity>
               )}
-              ItemSeparatorComponent={() => (
-                <View style={styles.modalSeparator} />
-              )}
+              ItemSeparatorComponent={() => <View style={styles.modalSeparator} />}
             />
           </View>
         </TouchableOpacity>

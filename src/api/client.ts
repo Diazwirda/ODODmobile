@@ -58,7 +58,7 @@ apiClient.interceptors.response.use(
     }
 
     return Promise.reject(normalizeError(error));
-  },
+  }
 );
 
 export default apiClient;

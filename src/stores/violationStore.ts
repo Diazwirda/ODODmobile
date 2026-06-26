@@ -18,7 +18,7 @@ interface ViolationStore {
   updateViolationStatus: (
     roomId: number,
     violationId: number,
-    data: UpdateViolationStatusPayload,
+    data: UpdateViolationStatusPayload
   ) => Promise<void>;
 }
 
@@ -31,9 +31,7 @@ export const useViolationStore = create<ViolationStore>()((set) => ({
   fetchViolations: async (roomId: number): Promise<void> => {
     set({ isLoading: true });
     try {
-      const { data } = await apiClient.get<Violation[]>(
-        `/rooms/${roomId}/violations`,
-      );
+      const { data } = await apiClient.get<Violation[]>(`/rooms/${roomId}/violations`);
       set({ violations: data, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
@@ -44,9 +42,7 @@ export const useViolationStore = create<ViolationStore>()((set) => ({
   fetchMyReports: async (roomId: number): Promise<void> => {
     set({ isLoading: true });
     try {
-      const { data } = await apiClient.get<Violation[]>(
-        `/rooms/${roomId}/violations/my-reports`,
-      );
+      const { data } = await apiClient.get<Violation[]>(`/rooms/${roomId}/violations/my-reports`);
       set({ myReports: data, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
@@ -54,29 +50,24 @@ export const useViolationStore = create<ViolationStore>()((set) => ({
     }
   },
 
-  createViolation: async (
-    roomId: number,
-    data: CreateViolationPayload,
-  ): Promise<void> => {
+  createViolation: async (roomId: number, data: CreateViolationPayload): Promise<void> => {
     set({ isSubmitting: true });
     try {
       const formData = new FormData();
       formData.append('rule_id', String(data.rule_id));
-      data.violator_ids.forEach((id, i) =>
-        formData.append(`violator_ids[${i}]`, String(id)),
-      );
+      data.violator_ids.forEach((id, i) => formData.append(`violator_ids[${i}]`, String(id)));
       if (data.description) formData.append('description', data.description);
       data.photos.forEach((photo, i) =>
         formData.append(`photos[${i}]`, {
           uri: photo.uri,
           type: photo.type,
           name: photo.name,
-        } as any),
+        } as any)
       );
 
       const { data: newViolation } = await apiClient.post<Violation>(
         `/rooms/${roomId}/violations`,
-        formData,
+        formData
       );
       set((state) => ({
         violations: [newViolation, ...state.violations],
@@ -91,16 +82,14 @@ export const useViolationStore = create<ViolationStore>()((set) => ({
   updateViolationStatus: async (
     roomId: number,
     violationId: number,
-    data: UpdateViolationStatusPayload,
+    data: UpdateViolationStatusPayload
   ): Promise<void> => {
     const { data: updated } = await apiClient.patch<Violation>(
       `/rooms/${roomId}/violations/${violationId}/status`,
-      data,
+      data
     );
     set((state) => ({
-      violations: state.violations.map((v) =>
-        v.id === violationId ? updated : v,
-      ),
+      violations: state.violations.map((v) => (v.id === violationId ? updated : v)),
     }));
   },
 }));

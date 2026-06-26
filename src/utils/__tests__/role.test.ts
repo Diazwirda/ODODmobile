@@ -45,12 +45,12 @@ describe('filterRulesForRole', () => {
   it('excludes admin_only rules for reporter', () => {
     const result = filterRulesForRole(rules, 'reporter');
     expect(result).toHaveLength(2);
-    expect(result.every(r => !r.admin_only)).toBe(true);
+    expect(result.every((r) => !r.admin_only)).toBe(true);
   });
 
   it('excludes admin_only rules for null role', () => {
     const result = filterRulesForRole(rules, null);
-    expect(result.every(r => !r.admin_only)).toBe(true);
+    expect(result.every((r) => !r.admin_only)).toBe(true);
   });
 
   it('returns empty array when input is empty', () => {
@@ -72,20 +72,20 @@ describe('filterRulesForRole', () => {
 
     it('reporter result never contains admin_only rules', () => {
       fc.assert(
-        fc.property(fc.array(ruleArb), rules => {
+        fc.property(fc.array(ruleArb), (rules) => {
           const result = filterRulesForRole(rules as Rule[], 'reporter');
-          return !result.some(r => r.admin_only);
+          return !result.some((r) => r.admin_only);
         }),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
     it('admin result has same length as input', () => {
       fc.assert(
-        fc.property(fc.array(ruleArb), rules => {
+        fc.property(fc.array(ruleArb), (rules) => {
           return filterRulesForRole(rules as Rule[], 'admin').length === rules.length;
         }),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });

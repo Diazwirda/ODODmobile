@@ -35,9 +35,6 @@ export async function removeToken(): Promise<void> {
  * @param threshold        - Seconds before expiry at which a refresh is triggered (default: 300).
  * @returns `true` if the token should be refreshed, `false` otherwise.
  */
-export function checkTokenNeedsRefresh(
-  remainingSeconds: number,
-  threshold: number = 300,
-): boolean {
+export function checkTokenNeedsRefresh(remainingSeconds: number, threshold: number = 300): boolean {
   return remainingSeconds <= threshold;
 }

@@ -51,7 +51,7 @@ describe('validateImageFile', () => {
     it('invalid MIME type always produces invalid result', () => {
       const invalidMimeArb = fc
         .string()
-        .filter(s => !validMimes.includes(s as (typeof validMimes)[number]));
+        .filter((s) => !validMimes.includes(s as (typeof validMimes)[number]));
 
       fc.assert(
         fc.property(
@@ -66,9 +66,9 @@ describe('validateImageFile', () => {
               size,
             };
             return validateImageFile(file, 5).valid === false;
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -83,9 +83,9 @@ describe('validateImageFile', () => {
           (size, mimeType) => {
             const file = makeFile({ size, type: mimeType });
             return validateImageFile(file, maxSizeMB).valid === false;
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
 
@@ -100,9 +100,9 @@ describe('validateImageFile', () => {
           (size, mimeType) => {
             const file = makeFile({ size, type: mimeType });
             return validateImageFile(file, maxSizeMB).valid === true;
-          },
+          }
         ),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });

@@ -66,10 +66,7 @@ export const useAuthStore = create<AuthStore>()((set) => ({
   register: async (data: RegisterPayload): Promise<void> => {
     set({ isLoading: true });
     try {
-      const { data: responseData } = await apiClient.post<AuthResponse>(
-        '/auth/register',
-        data,
-      );
+      const { data: responseData } = await apiClient.post<AuthResponse>('/auth/register', data);
       await saveToken(responseData.token);
       set({
         token: responseData.token,

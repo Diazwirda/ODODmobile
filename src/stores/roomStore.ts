@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import apiClient from '@api/client';
-import type {
-  Room,
-  MembershipRole,
-  CreateRoomPayload,
-  UpdateRoomPayload,
-} from '@/types/room';
+import type { Room, MembershipRole, CreateRoomPayload, UpdateRoomPayload } from '@/types/room';
 
 interface RoomStore {
   rooms: Room[];
@@ -101,8 +96,7 @@ export const useRoomStore = create<RoomStore>()((set, get) => ({
 
     set((state) => ({
       rooms: state.rooms.map((r) => (r.id === id ? updatedRoom : r)),
-      activeRoom:
-        state.activeRoom?.id === id ? updatedRoom : state.activeRoom,
+      activeRoom: state.activeRoom?.id === id ? updatedRoom : state.activeRoom,
     }));
   },
 

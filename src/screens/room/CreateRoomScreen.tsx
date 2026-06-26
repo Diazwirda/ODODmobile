@@ -22,10 +22,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  launchImageLibrary,
-  type Asset,
-} from 'react-native-image-picker';
+import { launchImageLibrary, type Asset } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 
@@ -53,7 +50,7 @@ const createRoomSchema = z
     {
       message: 'Kode undangan wajib diisi untuk tipe manual',
       path: ['invite_code'],
-    },
+    }
   );
 
 type FormValues = z.infer<typeof createRoomSchema>;
@@ -123,8 +120,7 @@ export default function CreateRoomScreen() {
           description: values.description || undefined,
           photo: photo ?? undefined,
           invite_code_type: values.invite_code_type as InviteCodeType,
-          invite_code:
-            values.invite_code_type === 'manual' ? values.invite_code : undefined,
+          invite_code: values.invite_code_type === 'manual' ? values.invite_code : undefined,
         });
         navigation.navigate('RoomListScreen');
       } catch (err) {
@@ -140,16 +136,13 @@ export default function CreateRoomScreen() {
             if (key) setError(key, { message: msgs[0] });
           });
         } else {
-          Alert.alert(
-            'Gagal',
-            normalized.message ?? 'Terjadi kesalahan. Silakan coba lagi.',
-          );
+          Alert.alert('Gagal', normalized.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
         }
       } finally {
         setIsSubmitting(false);
       }
     },
-    [createRoom, navigation, photo, setError],
+    [createRoom, navigation, photo, setError]
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -186,9 +179,7 @@ export default function CreateRoomScreen() {
               />
             )}
           />
-          {errors.name && (
-            <Text style={styles.errorText}>{errors.name.message}</Text>
-          )}
+          {errors.name && <Text style={styles.errorText}>{errors.name.message}</Text>}
         </View>
 
         {/* ── Deskripsi ──────────────────────────────────────────────────── */}
@@ -276,10 +267,7 @@ export default function CreateRoomScreen() {
                   accessibilityState={{ checked: value === 'manual' }}
                 >
                   <View
-                    style={[
-                      styles.radioCircle,
-                      value === 'manual' && styles.radioCircleSelected,
-                    ]}
+                    style={[styles.radioCircle, value === 'manual' && styles.radioCircleSelected]}
                   />
                   <Text style={styles.radioLabel}>Manual</Text>
                 </TouchableOpacity>

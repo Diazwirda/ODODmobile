@@ -44,16 +44,16 @@ export default function JoinRoomScreen() {
     try {
       const room = await joinRoom(trimmed);
       setActiveRoom(room);
-      navigation.navigate('RoomTabNavigator', { screen: 'HomeTab', params: { screen: 'RoomHomeScreen' } });
+      navigation.navigate('RoomTabNavigator', {
+        screen: 'HomeTab',
+        params: { screen: 'RoomHomeScreen' },
+      });
     } catch (err) {
       const normalized = err as NormalizedError;
       if (normalized.statusCode === 422) {
         setError('Kode room tidak valid atau sedang nonaktif.');
       } else {
-        Alert.alert(
-          'Gagal',
-          normalized.message ?? 'Terjadi kesalahan. Silakan coba lagi.',
-        );
+        Alert.alert('Gagal', normalized.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
       }
     } finally {
       setIsLoading(false);
@@ -69,9 +69,7 @@ export default function JoinRoomScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Gabung Room
         </Text>
-        <Text style={styles.subtitle}>
-          Masukkan kode undangan yang diberikan oleh Admin Room.
-        </Text>
+        <Text style={styles.subtitle}>Masukkan kode undangan yang diberikan oleh Admin Room.</Text>
 
         <TextInput
           style={[styles.input, error ? styles.inputError : null]}

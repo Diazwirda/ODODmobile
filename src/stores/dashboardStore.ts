@@ -9,11 +9,7 @@
 
 import { create } from 'zustand';
 import apiClient from '@api/client';
-import type {
-  DashboardStats,
-  LeaderboardResponse,
-  LeaderboardFilters,
-} from '@/types/dashboard';
+import type { DashboardStats, LeaderboardResponse, LeaderboardFilters } from '@/types/dashboard';
 
 interface DashboardStore {
   stats: DashboardStats | null;
@@ -47,9 +43,7 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
   fetchStats: async (roomId: number): Promise<void> => {
     set({ isLoading: true });
     try {
-      const { data } = await apiClient.get<DashboardStats>(
-        `/rooms/${roomId}/dashboard/stats`,
-      );
+      const { data } = await apiClient.get<DashboardStats>(`/rooms/${roomId}/dashboard/stats`);
       set({ stats: data, isLoading: false });
     } catch (error) {
       set({ isLoading: false });
@@ -62,10 +56,7 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
    * as query parameters.
    * GET /rooms/{roomId}/dashboard/leaderboard
    */
-  fetchLeaderboard: async (
-    roomId: number,
-    filters: LeaderboardFilters,
-  ): Promise<void> => {
+  fetchLeaderboard: async (roomId: number, filters: LeaderboardFilters): Promise<void> => {
     set({ isLoading: true });
     try {
       const params: Record<string, string | number | undefined> = {
@@ -79,7 +70,7 @@ export const useDashboardStore = create<DashboardStore>()((set) => ({
 
       const { data } = await apiClient.get<LeaderboardResponse>(
         `/rooms/${roomId}/dashboard/leaderboard`,
-        { params },
+        { params }
       );
       set({ leaderboard: data, isLoading: false });
     } catch (error) {

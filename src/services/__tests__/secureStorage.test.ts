@@ -32,10 +32,10 @@ describe('checkTokenNeedsRefresh', () => {
   describe('P1 — checkTokenNeedsRefresh property test', () => {
     it('returns true if and only if remainingSeconds <= 300', () => {
       fc.assert(
-        fc.property(fc.integer({ min: 0, max: 3600 }), remainingSeconds => {
+        fc.property(fc.integer({ min: 0, max: 3600 }), (remainingSeconds) => {
           return checkTokenNeedsRefresh(remainingSeconds) === remainingSeconds <= 300;
         }),
-        { numRuns: 100 },
+        { numRuns: 100 }
       );
     });
   });
