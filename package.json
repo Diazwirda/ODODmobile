@@ -11,6 +11,7 @@
     "axios": "^1.18.1",
     "babel-preset-expo": "~56.0.0",
     "expo": "~56.0.12",
+    "expo-build-properties": "~56.0.25",
     "expo-file-system": "~56.0.9",
     "expo-image-manipulator": "~56.0.24",
     "expo-sharing": "~56.0.24",
@@ -26,6 +27,7 @@
     "react-native-keychain": "^8.2.0",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-worklets": "0.8.3",
     "tailwindcss": "^3.4.19",
     "zod": "^3.25.76",
     "zustand": "^4.5.7"

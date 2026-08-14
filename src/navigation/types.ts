@@ -4,7 +4,6 @@ import type { BackendType } from '../config/backends';
 export type AuthStackParamList = {
   Splash: undefined;
   Login: { backend: BackendType };
-  Register: { backend: BackendType };
 };
 
 export type RoomTabsParamList = {

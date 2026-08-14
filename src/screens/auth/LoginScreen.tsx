@@ -25,7 +25,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 const REMEMBERED_EMAIL_KEY = 'remembered_email';
 
-export default function LoginScreen({ route, navigation }: Props) {
+export default function LoginScreen({ route }: Props) {
   const { backend } = route.params;
   const backendConfig = BACKENDS[backend];
 
@@ -34,6 +34,7 @@ export default function LoginScreen({ route, navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     SecureStorage.getItem(REMEMBERED_EMAIL_KEY).then((savedEmail) => {
@@ -58,17 +59,12 @@ export default function LoginScreen({ route, navigation }: Props) {
       } else {
         await SecureStorage.removeItem(REMEMBERED_EMAIL_KEY);
       }
-      // Navigation handled by RootNavigator after auth state change
     } catch (error: any) {
       Alert.alert(
         'Login Gagal',
         error.response?.data?.message || error.message || 'Email atau kata sandi salah',
       );
     }
-  };
-
-  const handleRegister = () => {
-    navigation.navigate('Register', { backend });
   };
 
   return (
@@ -81,7 +77,6 @@ export default function LoginScreen({ route, navigation }: Props) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>Masuk ke {backendConfig.name}</Text>
-
             {backendConfig.features.emailRestriction && (
               <Text style={styles.subtitle}>
                 Gunakan email {backendConfig.features.emailRestriction}
@@ -107,14 +102,27 @@ export default function LoginScreen({ route, navigation }: Props) {
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Kata Sandi</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Masukkan kata sandi"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                editable={!isLoading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  key={showPassword ? 'password-visible' : 'password-hidden'}
+                  style={styles.passwordInput}
+                  placeholder="Masukkan kata sandi"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  editable={!isLoading}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="password"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword((prev) => !prev)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁️'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Remember Me */}
@@ -142,18 +150,6 @@ export default function LoginScreen({ route, navigation }: Props) {
                 <Text style={styles.buttonText}>Masuk</Text>
               )}
             </TouchableOpacity>
-
-            {/* Register Link */}
-            <TouchableOpacity
-              style={styles.registerLink}
-              onPress={handleRegister}
-              disabled={isLoading}
-            >
-              <Text style={styles.registerLinkText}>
-                Belum punya akun?{' '}
-                <Text style={styles.registerLinkBold}>Daftar</Text>
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -177,35 +173,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
     marginTop: 20,
-  },
-  rememberRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: -4,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: '#9CA3AF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF',
-  },
-  checkboxChecked: {
-    backgroundColor: '#3B82F6',
-    borderColor: '#3B82F6',
-  },
-  checkboxTick: {
-    color: '#FFF',
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  rememberText: {
-    fontSize: 14,
-    color: '#333',
   },
   title: {
     fontSize: 24,
@@ -236,6 +203,57 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
   },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+  },
+  eyeButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  eyeIcon: {
+    fontSize: 18,
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: -4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  checkboxTick: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  rememberText: {
+    fontSize: 14,
+    color: '#333',
+  },
   button: {
     paddingVertical: 16,
     borderRadius: 8,
@@ -255,17 +273,5 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  registerLink: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  registerLinkText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  registerLinkBold: {
-    fontWeight: 'bold',
-    color: '#3B82F6',
   },
 });
