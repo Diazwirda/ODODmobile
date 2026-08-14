@@ -1,0 +1,33 @@
+# Build outputs
+android/app/build/
+android/.gradle/
+android/app/.cxx/
+
+# Node modules (EAS installs these on the server)
+# node_modules/ — jangan ignore ini, EAS butuh untuk resolusi
+
+# Docs & changelogs
+CHANGELOG_EXPORT.md
+DUAL_BACKEND_IMPLEMENTATION.md
+HYDRATION_WARNING_FIX.md
+IMPLEMENTATION_STATUS.md
+MIGRATION_GUIDE.md
+NAVIGATION_RESET_ERROR_FIX.md
+NEXT_STEPS.md
+PROGRESS_REPORT.md
+PROGRESS_TODAY.md
+QUICK_REFERENCE.md
+README_DUAL_BACKEND.md
+
+# Reference files
+ODOB MOBILE FIle Refrensi/
+
+# IDE & editor
+.idea/
+.vscode/
+
+# Test coverage
+coverage/
+
+# Expo dev logs
+.expo/dev/
