@@ -47,7 +47,7 @@ export default function RulesScreen() {
   const loadRules = useCallback(async (nextPage = 1, append = false) => {
     if (nextPage === 1) setLoading(true);
     try {
-      const { data } = await rulesApi.list({ page: nextPage, per_page: 10 } as any);
+      const { data } = await rulesApi.list({ page: nextPage, per_page: 10 });
       const normalized = normalizeRules(data);
       setRules((prev) => append ? [...prev, ...normalized.list] : normalized.list);
       setPage(normalized.current);

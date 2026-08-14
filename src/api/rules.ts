@@ -11,7 +11,8 @@ const activeClient = () => {
 };
 
 export const rulesApi = {
-  list: () => activeClient().get<Rule[]>('/rules'),
+  list: (params?: { page?: number; per_page?: number }) => 
+    activeClient().get<Rule[]>('/rules', { params }),
 
   create: (payload: CreateRulePayload) =>
     activeClient().post<Rule>('/admin/rules', payload),
