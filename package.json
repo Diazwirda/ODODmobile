@@ -17,6 +17,7 @@
     "expo-image-manipulator": "~56.0.24",
     "expo-sharing": "~56.0.24",
     "expo-status-bar": "~56.0.4",
+    "expo-updates": "~56.0.24",
     "nativewind": "^2.0.11",
     "react": "19.2.3",
     "react-hook-form": "^7.80.0",
