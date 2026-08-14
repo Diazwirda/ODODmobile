@@ -1,6 +1,12 @@
 <resources>
   <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
     <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+    <!-- The app UI is always light-themed regardless of system dark mode (see
+         App.tsx's forced light status bar). DayNight's default window
+         background is black in dark mode, which flashes through at the
+         screen edges during React Navigation's slide transitions. Force it
+         white so that never shows. -->
+    <item name="android:windowBackground">@android:color/white</item>
   </style>
   <style name="Theme.App.SplashScreen" parent="AppTheme">
     <item name="android:windowBackground">@drawable/splashscreen_logo</item>

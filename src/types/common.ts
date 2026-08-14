@@ -1,17 +1,12 @@
-export interface ImageFile {
-  uri: string;
-  type: 'image/jpeg' | 'image/png' | 'image/webp';
-  name: string;
-  size: number; // dalam bytes
+export interface PaginatedResponse<T> {
+  data: T[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
 }
 
-export interface Department {
-  id: number;
-  name: string;
-}
-
-export interface NormalizedError {
+export interface ApiError {
   message: string;
-  statusCode: number | null;
-  validationErrors: Record<string, string[]> | null;
+  errors?: Record<string, string[]>;
 }

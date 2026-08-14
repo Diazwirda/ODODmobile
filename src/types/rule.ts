@@ -3,20 +3,19 @@ export interface Rule {
   name: string;
   description?: string;
   category?: string;
+  reporter_points?: number;
+  violator_points?: number;
   admin_only: boolean;
+  is_deleted?: boolean;
+  deleted_at?: string;
   created_at: string;
-}
-
-export interface ArchivedRule {
-  id: number;
-  name: string;
-  days_left: number;
-  purge_at: string;
 }
 
 export interface CreateRulePayload {
   name: string;
   description?: string;
   category?: string;
-  admin_only: boolean;
+  reporter_points?: number;
+  violator_points?: number;
+  admin_only?: boolean;
 }

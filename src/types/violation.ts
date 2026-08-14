@@ -1,25 +1,21 @@
-import type { Rule } from './rule';
-import type { ImageFile } from './common';
-
 export type ViolationStatus = 'pending' | 'verified' | 'rejected';
 
 export interface ViolationUser {
   id: number;
   name: string;
-  department?: string;
   photo?: string;
 }
 
 export interface Violation {
   id: number;
-  rule: Rule;
+  rule: { id: number; name: string };
   reporter: ViolationUser;
-  violator: ViolationUser;
   violators: ViolationUser[];
   status: ViolationStatus;
   description?: string;
   photos: string[];
   reject_reason?: string;
+  points_awarded?: number;
   created_at: string;
 }
 
@@ -27,7 +23,7 @@ export interface CreateViolationPayload {
   rule_id: number;
   violator_ids: number[];
   description?: string;
-  photos: ImageFile[];
+  photos: { uri: string; type: string; name: string }[];
 }
 
 export interface UpdateViolationStatusPayload {

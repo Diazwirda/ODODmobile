@@ -1,6 +1,14 @@
 import { create } from 'zustand';
-import apiClient from '@api/client';
-import type { Room, MembershipRole, CreateRoomPayload, UpdateRoomPayload } from '@/types/room';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { UnifiedRoomService } from '../services/unifiedRoomService';
+import { useMultiAuthStore } from './multiAuthStore';
+import type {
+  Room,
+  CreateRoomPayload,
+  JoinRoomPayload,
+  MembershipRole,
+} from '../types/room';
 
 interface RoomStore {
   rooms: Room[];
@@ -10,105 +18,150 @@ interface RoomStore {
 
   fetchRooms: () => Promise<void>;
   setActiveRoom: (room: Room) => void;
-  createRoom: (data: CreateRoomPayload) => Promise<Room>;
-  joinRoom: (code: string) => Promise<Room>;
-  updateRoom: (id: number, data: UpdateRoomPayload) => Promise<void>;
-  deleteRoom: (id: number) => Promise<void>;
   clearActiveRoom: () => void;
+  createRoom: (payload: CreateRoomPayload) => Promise<void>;
+  joinRoom: (payload: JoinRoomPayload) => Promise<Room>;
 }
 
-export const useRoomStore = create<RoomStore>()((set, get) => ({
-  rooms: [],
-  activeRoom: null,
-  activeRoomRole: null,
-  isLoading: false,
+export const useRoomStore = create<RoomStore>()(
+  persist(
+    (set, get) => ({
+      rooms: [],
+      activeRoom: null,
+      activeRoomRole: null,
+      isLoading: false,
 
-  fetchRooms: async () => {
-    set({ isLoading: true });
-    try {
-      const { data } = await apiClient.get<Room[]>('/rooms');
-      set({ rooms: data, isLoading: false });
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
+      /**
+       * Fetch rooms from all authenticated backends
+       * Uses UnifiedRoomService to aggregate rooms
+       */
+      fetchRooms: async () => {
+        set({ isLoading: true });
+        try {
+          const rooms = await UnifiedRoomService.getAllRooms();
+          
+          if (__DEV__) {
+            console.log(`[Room Store] Fetched ${rooms.length} rooms total`);
+            if (rooms.length > 0) {
+              console.log('[Room Store] Sample room:', {
+                id: rooms[0].id,
+                name: rooms[0].name,
+                backend: rooms[0].backend,
+              });
+            }
+          }
+          
+          // Keep activeRoom in sync — e.g. after an admin edits the room's
+          // name/description/photo, the previously-selected activeRoom would
+          // otherwise stay stale until the user re-picks it from the list.
+          const currentActiveRoom = get().activeRoom;
+          const refreshedActiveRoom = currentActiveRoom
+            ? rooms.find((room) => room.id === currentActiveRoom.id)
+            : undefined;
 
-  setActiveRoom: (room: Room) => {
-    set({ activeRoom: room, activeRoomRole: room.membership_role });
-  },
+          set({
+            rooms,
+            isLoading: false,
+            ...(refreshedActiveRoom ? { activeRoom: refreshedActiveRoom } : {}),
+          });
+        } catch (error) {
+          if (__DEV__) {
+            console.error('[Room Store] Failed to fetch rooms:', error);
+          }
+          set({ isLoading: false });
+          throw error;
+        }
+      },
 
-  createRoom: async (data: CreateRoomPayload) => {
-    let body: FormData | CreateRoomPayload;
+      /**
+       * Set active room and store its backend context
+       */
+      setActiveRoom: (room) => {
+        const membershipRole: MembershipRole = room.membership_role === 'admin' || room.user_role === 'admin' || room.role === 'admin'
+          ? 'admin'
+          : 'reporter';
+        const normalizedRoom = {
+          ...room,
+          membership_role: membershipRole,
+          can_manage: Boolean(room.can_manage ?? membershipRole === 'admin'),
+        };
+        if (__DEV__) {
+          console.log(`[Room Store] Setting active room: ${normalizedRoom.name} (${normalizedRoom.backend}) as ${membershipRole}`);
+        }
+        set({ activeRoom: normalizedRoom, activeRoomRole: membershipRole });
+      },
 
-    if (data.photo) {
-      const formData = new FormData();
-      formData.append('name', data.name);
-      if (data.description) formData.append('description', data.description);
-      formData.append('photo', {
-        uri: data.photo.uri,
-        type: data.photo.type,
-        name: data.photo.name,
-      } as unknown as Blob);
-      formData.append('invite_code_type', data.invite_code_type);
-      if (data.invite_code) formData.append('invite_code', data.invite_code);
-      body = formData;
-    } else {
-      body = data;
-    }
+      /**
+       * Clear active room
+       */
+      clearActiveRoom: () => {
+        if (__DEV__) {
+          console.log('[Room Store] Clearing active room');
+        }
+        set({ activeRoom: null, activeRoomRole: null });
+      },
 
-    const { data: newRoom } = await apiClient.post<Room>('/rooms', body);
-    set((state) => ({ rooms: [...state.rooms, newRoom] }));
-    return newRoom;
-  },
+      /**
+       * Create room in active backend
+       */
+      createRoom: async (payload) => {
+        const { activeBackend } = useMultiAuthStore.getState();
+        
+        if (!activeBackend) {
+          throw new Error('No active backend. Please login first.');
+        }
 
-  joinRoom: async (code: string) => {
-    const { data: room } = await apiClient.post<Room>('/rooms/join', {
-      invite_code: code,
-    });
-    set((state) => ({ rooms: [...state.rooms, room] }));
-    return room;
-  },
+        if (__DEV__) {
+          console.log(`[Room Store] Creating room in ${activeBackend}:`, payload.name);
+        }
 
-  updateRoom: async (id: number, data: UpdateRoomPayload) => {
-    let body: FormData | UpdateRoomPayload;
+        const room = await UnifiedRoomService.createRoom(activeBackend, payload);
+        
+        set((state) => ({ 
+          rooms: [...state.rooms, room],
+        }));
 
-    if (data.photo) {
-      const formData = new FormData();
-      if (data.name) formData.append('name', data.name);
-      if (data.description) formData.append('description', data.description);
-      formData.append('photo', {
-        uri: data.photo.uri,
-        type: data.photo.type,
-        name: data.photo.name,
-      } as unknown as Blob);
-      if (data.invite_code_enabled !== undefined) {
-        formData.append('invite_code_enabled', String(data.invite_code_enabled));
-      }
-      if (data.invite_code_type) formData.append('invite_code_type', data.invite_code_type);
-      if (data.invite_code) formData.append('invite_code', data.invite_code);
-      body = formData;
-    } else {
-      body = data;
-    }
+        if (__DEV__) {
+          console.log(`[Room Store] Room created successfully:`, room.id);
+        }
+      },
 
-    const { data: updatedRoom } = await apiClient.put<Room>(`/rooms/${id}`, body);
+      /**
+       * Join room in active backend
+       */
+      joinRoom: async (payload) => {
+        const { activeBackend } = useMultiAuthStore.getState();
+        
+        if (!activeBackend) {
+          throw new Error('No active backend. Please login first.');
+        }
 
-    set((state) => ({
-      rooms: state.rooms.map((r) => (r.id === id ? updatedRoom : r)),
-      activeRoom: state.activeRoom?.id === id ? updatedRoom : state.activeRoom,
-    }));
-  },
+        if (__DEV__) {
+          console.log(`[Room Store] Joining room in ${activeBackend}:`, payload.code);
+        }
 
-  deleteRoom: async (id: number) => {
-    await apiClient.delete(`/rooms/${id}`);
-    set((state) => ({
-      rooms: state.rooms.filter((r) => r.id !== id),
-    }));
-    get().clearActiveRoom();
-  },
+        const { room } = await UnifiedRoomService.joinRoom(activeBackend, payload.code);
 
-  clearActiveRoom: () => {
-    set({ activeRoom: null, activeRoomRole: null });
-  },
-}));
+        // Add or update room in list
+        set((state) => ({
+          rooms: [...state.rooms.filter(r => r.id !== room.id), room],
+        }));
+
+        if (__DEV__) {
+          console.log(`[Room Store] Room joined successfully:`, room.id);
+        }
+
+        return room;
+      },
+    }),
+    {
+      name: 'odob-room-store',
+      storage: createJSONStorage(() => AsyncStorage),
+      // Only persist activeRoom and activeRoomRole — rooms will be fetched on startup
+      partialize: (state) => ({
+        activeRoom: state.activeRoom,
+        activeRoomRole: state.activeRoomRole,
+      }),
+    },
+  ),
+);

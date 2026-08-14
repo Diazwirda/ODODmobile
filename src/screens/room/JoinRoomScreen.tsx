@@ -1,155 +1,222 @@
-/**
- * JoinRoomScreen — Formulir bergabung ke room dengan kode undangan.
- *
- * Requirements: 4.5, 4.6, 4.7, 4.8
- */
-
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
+  StyleSheet,
   ActivityIndicator,
   KeyboardAvoidingView,
+  ScrollView,
   Platform,
-  StyleSheet,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useRoomStore } from '../../stores/roomStore';
+import { handleApiError, getValidationErrors } from '../../utils/toast';
+import type { AppStackParamList } from '../../navigation/types';
 
-import { useRoomStore } from '@stores/roomStore';
-import type { AppStackParamList } from '@navigation/types';
-import type { NormalizedError } from '@/types/common';
+const schema = z.object({
+  code: z.string().min(1, 'Kode undangan wajib diisi'),
+});
 
-type Nav = StackNavigationProp<AppStackParamList>;
+type FormData = z.infer<typeof schema>;
 
-export default function JoinRoomScreen() {
-  const navigation = useNavigation<Nav>();
-  const { joinRoom, setActiveRoom } = useRoomStore();
+type Props = NativeStackScreenProps<AppStackParamList, 'JoinRoomScreen'>;
 
-  const [code, setCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
+export default function JoinRoomScreen({ navigation }: Props) {
+  const { joinRoom, setActiveRoom, fetchRooms } = useRoomStore();
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleJoin = useCallback(async () => {
-    const trimmed = code.trim();
-    if (!trimmed) {
-      setError('Kode undangan wajib diisi.');
-      return;
-    }
-    setError(null);
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: { code: '' },
+  });
+
+  const onSubmit = async (values: FormData) => {
+    setGeneralError(null);
     setIsLoading(true);
     try {
-      const room = await joinRoom(trimmed);
+      const room = await joinRoom({ code: values.code });
       setActiveRoom(room);
-      navigation.navigate('RoomTabNavigator', {
-        screen: 'HomeTab',
-        params: { screen: 'RoomHomeScreen' },
-      });
-    } catch (err) {
-      const normalized = err as NormalizedError;
-      if (normalized.statusCode === 422) {
-        setError('Kode room tidak valid atau sedang nonaktif.');
+      // Refresh room list agar data terbaru
+      fetchRooms().catch(() => {});
+      navigation.replace('RoomTabs', { screen: 'HomeTab' } as never);
+    } catch (err: unknown) {
+      const fieldErrors = getValidationErrors(err);
+      if (fieldErrors?.code) {
+        setError('code', { message: fieldErrors.code });
       } else {
-        Alert.alert('Gagal', normalized.message ?? 'Terjadi kesalahan. Silakan coba lagi.');
+        setGeneralError(handleApiError(err));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [code, joinRoom, navigation, setActiveRoom]);
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={styles.container}>
-        <Text style={styles.title} accessibilityRole="header">
-          Gabung Room
-        </Text>
-        <Text style={styles.subtitle}>Masukkan kode undangan yang diberikan oleh Admin Room.</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Kembali"
+          >
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Gabung Room</Text>
+          <View style={styles.backBtn} />
+        </View>
 
-        <TextInput
-          style={[styles.input, error ? styles.inputError : null]}
-          placeholder="Masukkan kode undangan"
-          placeholderTextColor="#9CA3AF"
-          value={code}
-          onChangeText={(t) => {
-            setCode(t);
-            if (error) setError(null);
-          }}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          returnKeyType="done"
-          onSubmitEditing={handleJoin}
-          accessibilityLabel="Kode undangan room"
-        />
-        {error ? (
-          <Text style={styles.errorText} accessibilityRole="alert">
-            {error}
-          </Text>
-        ) : null}
-
-        <TouchableOpacity
-          style={[styles.btn, isLoading && styles.btnDisabled]}
-          onPress={handleJoin}
-          disabled={isLoading}
-          accessibilityLabel="Gabung ke room"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isLoading }}
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
         >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>Gabung</Text>
-          )}
-        </TouchableOpacity>
+          {/* Info */}
+          <View style={styles.infoBox}>
+            <Text style={styles.infoEmoji}>🎫</Text>
+            <Text style={styles.infoText}>
+              Masukkan kode undangan yang Anda terima dari admin room.
+            </Text>
+          </View>
 
-        <TouchableOpacity
-          style={styles.cancelBtn}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Batal"
-          accessibilityRole="button"
-        >
-          <Text style={styles.cancelText}>Batal</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+          {/* Error umum */}
+          {generalError ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorBoxText}>{generalError}</Text>
+            </View>
+          ) : null}
+
+          {/* Form */}
+          <View style={styles.field}>
+            <Text style={styles.label}>
+              Kode Undangan <Text style={styles.required}>*</Text>
+            </Text>
+            <Controller
+              control={control}
+              name="code"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={[styles.input, errors.code ? styles.inputError : null]}
+                  placeholder="Masukkan kode undangan"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  value={value}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                />
+              )}
+            />
+            {errors.code ? (
+              <Text style={styles.errorText}>{errors.code.message}</Text>
+            ) : null}
+          </View>
+
+          {/* Tombol Gabung */}
+          <TouchableOpacity
+            style={[styles.btnPrimary, isLoading ? styles.btnDisabled : null]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Gabung"
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.btnPrimaryText}>Gabung</Text>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fff' },
-  container: { flex: 1, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: '#6B7280', marginBottom: 24, lineHeight: 20 },
+  safeArea: { flex: 1, backgroundColor: '#F9FAFB' },
+  flex: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  backBtn: { width: 40, alignItems: 'flex-start' },
+  backIcon: { fontSize: 24, color: '#3B82F6' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  container: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+  },
+  infoBox: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  infoEmoji: { fontSize: 36, marginBottom: 8 },
+  infoText: {
+    fontSize: 13,
+    color: '#1E40AF',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  errorBox: {
+    backgroundColor: '#FEE2E2',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorBoxText: { color: '#DC2626', fontSize: 13 },
+  field: { marginBottom: 18 },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 6,
+  },
+  required: { color: '#EF4444' },
   input: {
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 18,
-    letterSpacing: 2,
+    paddingVertical: 12,
+    fontSize: 15,
     color: '#111827',
-    backgroundColor: '#F9FAFB',
-    textAlign: 'center',
-    marginBottom: 4,
   },
   inputError: { borderColor: '#EF4444' },
-  errorText: { fontSize: 12, color: '#EF4444', textAlign: 'center', marginBottom: 8 },
-  btn: {
+  errorText: { fontSize: 12, color: '#EF4444', marginTop: 4 },
+  btnPrimary: {
     backgroundColor: '#3B82F6',
-    borderRadius: 8,
+    borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 10,
+    marginTop: 8,
   },
-  btnDisabled: { backgroundColor: '#93C5FD' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  cancelBtn: { alignItems: 'center', paddingVertical: 10 },
-  cancelText: { fontSize: 15, color: '#6B7280' },
+  btnDisabled: { opacity: 0.6 },
+  btnPrimaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

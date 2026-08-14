@@ -1,20 +1,21 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-
-import LoginScreen from '@screens/auth/LoginScreen';
-import RegisterScreen from '@screens/auth/RegisterScreen';
-import OnboardingStack from './OnboardingStack';
-
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import SplashScreen from '../screens/auth/SplashScreen';
+import LoginScreen from '../screens/auth/LoginScreen';
+import RegisterScreen from '../screens/auth/RegisterScreen';
 import type { AuthStackParamList } from './types';
 
-const Stack = createStackNavigator<AuthStackParamList>();
+const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export default function AuthStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="LoginScreen" component={LoginScreen} />
-      <Stack.Screen name="RegisterScreen" component={RegisterScreen} />
-      <Stack.Screen name="OnboardingStack" component={OnboardingStack} />
+    <Stack.Navigator
+      initialRouteName="Splash"
+      screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F9FAFB' } }}
+    >
+      <Stack.Screen name="Splash" component={SplashScreen} />
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
     </Stack.Navigator>
   );
 }

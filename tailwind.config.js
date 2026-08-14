@@ -9,8 +9,7 @@ module.exports = {
   ],
   // Include the NativeWind preset for React Native support
   presets: [
-    // Uncomment after installing NativeWind (task 1.2):
-    // require('nativewind/preset'),
+    require('nativewind/preset'),
   ],
   theme: {
     extend: {

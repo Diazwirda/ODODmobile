@@ -1,364 +1,346 @@
 /**
- * RoomListScreen — Daftar semua room yang diikuti pengguna.
+ * Room List Screen
  *
- * Requirements: 4.1, 4.5, 15.1, 15.2, 15.5, 15.6
+ * Displays all companies/rooms the user is a member of.
  */
 
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  Image,
+  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import AppNavbar from '../../components/AppNavbar';
+import { useRoomStore } from '../../stores/roomStore';
+import { UnifiedRoomService } from '../../services/unifiedRoomService';
+import type { Room } from '../../types/room';
+import type { AppStackParamList } from '../../navigation/types';
 
-import { useRoomStore } from '@stores/roomStore';
-import { getInitials } from '@utils/avatar';
-import type { Room } from '@/types/room';
-import type { AppStackParamList } from '@navigation/types';
+const ROOM_PLACEHOLDER_IMAGE = require('../../assets/room-placeholder.png');
 
-type Nav = StackNavigationProp<AppStackParamList>;
+type Props = NativeStackScreenProps<AppStackParamList, 'RoomListScreen'>;
 
-// ─── Room Card ────────────────────────────────────────────────────────────────
+export default function RoomListScreen({ navigation }: Props) {
+  const { setActiveRoom } = useRoomStore();
 
-function RoomCard({ room, onPress }: { room: Room; onPress: () => void }) {
-  const joinedDate = new Date(room.joined_at).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-  const roleLabel = room.membership_role === 'admin' ? 'Admin' : 'Reporter';
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityLabel={`Room ${room.name}. Peran: ${roleLabel}. Bergabung: ${joinedDate}`}
-      accessibilityRole="button"
-    >
-      {/* Avatar */}
-      <View style={styles.avatarWrapper}>
-        {room.photo ? (
-          <Image
-            source={{ uri: room.photo }}
-            style={styles.avatar}
-            accessibilityLabel={`Foto room ${room.name}`}
-          />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Text style={styles.avatarInitials}>{getInitials(room.name)}</Text>
-          </View>
-        )}
-      </View>
+  const loadRooms = useCallback(async () => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const allRooms = await UnifiedRoomService.getAllRooms();
+      setRooms(allRooms);
+    } catch (err: any) {
+      setError(err.message || 'Gagal memuat daftar room');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-      {/* Info */}
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <Text style={styles.roomName} numberOfLines={1}>
-            {room.name}
-          </Text>
-          {room.can_manage && (
-            <View style={styles.adminBadge} accessibilityLabel="Admin">
-              <Text style={styles.adminBadgeText}>Admin</Text>
-            </View>
-          )}
-        </View>
-
-        {room.description ? (
-          <Text style={styles.roomDescription} numberOfLines={2}>
-            {room.description}
-          </Text>
-        ) : null}
-
-        <View style={styles.cardMeta}>
-          <Text style={styles.roleText}>{roleLabel}</Text>
-          <Text style={styles.metaSeparator}>·</Text>
-          <Text style={styles.joinedText}>Bergabung {joinedDate}</Text>
-        </View>
-      </View>
-
-      {/* Chevron */}
-      <Text style={styles.chevron}>›</Text>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Main Screen ─────────────────────────────────────────────────────────────
-
-export default function RoomListScreen() {
-  const navigation = useNavigation<Nav>();
-  const { rooms, isLoading, fetchRooms, setActiveRoom } = useRoomStore();
-
-  // Fetch on mount
   useEffect(() => {
-    fetchRooms();
-  }, [fetchRooms]);
+    loadRooms();
+  }, [loadRooms]);
 
-  const handleRefresh = useCallback(() => {
-    fetchRooms();
-  }, [fetchRooms]);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadRooms();
+    setRefreshing(false);
+  };
 
-  const handleSelectRoom = useCallback(
-    (room: Room) => {
-      setActiveRoom(room);
-      navigation.navigate('RoomTabNavigator', {
-        screen: 'HomeTab',
-        params: { screen: 'RoomHomeScreen' },
-      });
-    },
-    [navigation, setActiveRoom]
-  );
+  const handleSelectRoom = (room: Room) => {
+    setActiveRoom(room);
+    navigation.navigate('RoomTabs', { screen: 'HomeTab' } as never);
+  };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  if (isLoading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#3B82F6" />
+          <Text style={styles.loadingText}>Memuat room...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title} accessibilityRole="header">
-          Room Saya
-        </Text>
-        <View style={styles.actionRow}>
-          <TouchableOpacity
-            style={styles.btnPrimary}
-            onPress={() => navigation.navigate('CreateRoomScreen')}
-            accessibilityLabel="Buat room baru"
-            accessibilityRole="button"
-          >
-            <Text style={styles.btnPrimaryText}>+ Buat Room</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.btnOutline}
-            onPress={() => navigation.navigate('JoinRoomScreen')}
-            accessibilityLabel="Gabung room dengan kode undangan"
-            accessibilityRole="button"
-          >
-            <Text style={styles.btnOutlineText}>Gabung Room</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <AppNavbar title="Perusahaan Saya" />
 
-      {/* Loading */}
-      {isLoading && rooms.length === 0 ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#3B82F6" accessibilityLabel="Memuat daftar room" />
+      {/* Error State */}
+      {error && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={loadRooms} style={styles.retryBtn}>
+            <Text style={styles.retryText}>Coba Lagi</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={rooms}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <RoomCard room={item} onPress={() => handleSelectRoom(item)} />}
-          contentContainerStyle={rooms.length === 0 ? styles.emptyContainer : styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyEmoji}>🏠</Text>
-              <Text style={styles.emptyTitle}>Belum ada room</Text>
-              <Text style={styles.emptyDescription}>
-                Anda belum bergabung ke room manapun.{'\n'}Tekan &apos;Buat Room&apos; atau
-                &apos;Gabung Room&apos; untuk memulai.
-              </Text>
-            </View>
-          }
-          onRefresh={handleRefresh}
-          refreshing={isLoading}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-          showsVerticalScrollIndicator={false}
-          accessibilityLabel="Daftar room"
-        />
       )}
+
+      {/* Content */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3B82F6']}
+          />
+        }
+      >
+        {rooms.length === 0 ? (
+          /* Empty State */
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyEmoji}>🏢</Text>
+            <Text style={styles.emptyTitle}>Belum Ada Perusahaan</Text>
+            <Text style={styles.emptySubtitle}>
+              Buat perusahaan baru atau gabung dengan kode undangan.
+            </Text>
+          </View>
+        ) : (
+          rooms.map((room) => (
+            <RoomCard key={room.id} room={room} onPress={handleSelectRoom} />
+          ))
+        )}
+      </ScrollView>
+
+      {/* Action Buttons */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.btnJoin}
+          onPress={() => navigation.navigate('JoinRoomScreen')}
+        >
+          <Text style={styles.btnJoinText}>Gabung Perusahaan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.btnCreate}
+          onPress={() => navigation.navigate('CreateRoomScreen')}
+        >
+          <Text style={styles.btnCreateText}>+ Buat</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// Room Card Component
+const RoomCard = ({
+  room,
+  onPress,
+}: {
+  room: Room;
+  onPress: (room: Room) => void;
+}) => (
+  <TouchableOpacity
+    style={styles.card}
+    onPress={() => onPress(room)}
+    activeOpacity={0.7}
+  >
+    <View style={styles.cardTopRow}>
+      <Image
+        source={room.photo ? { uri: room.photo } : ROOM_PLACEHOLDER_IMAGE}
+        style={[styles.cardLogo, !room.photo && styles.cardLogoPlaceholder]}
+      />
+
+      <View style={styles.cardHeaderInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
+          {room.name}
+        </Text>
+        <Text style={styles.cardCode}>
+          Kode: {room.code || room.invite_code || room.room_code || 'N/A'}
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.roleBadge,
+          room.membership_role === 'admin'
+            ? styles.roleBadgeAdmin
+            : styles.roleBadgeReporter,
+        ]}
+      >
+        <Text style={styles.roleBadgeText}>
+          {room.membership_role === 'admin' ? 'Admin' : 'Reporter'}
+        </Text>
+      </View>
+    </View>
+
+    {room.description && (
+      <Text style={styles.cardDesc} numberOfLines={2}>
+        {room.description}
+      </Text>
+    )}
+  </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-
-  // ── Header ────────────────────────────────────────────────────────────────
-  header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
   },
-  title: {
-    fontSize: 24,
+  loadingText: {
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  errorBox: {
+    margin: 16,
+    backgroundColor: '#FEE2E2',
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  retryBtn: {
+    backgroundColor: '#EF4444',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
+  retryText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  scrollContent: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 14,
+  },
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 12,
+    color: '#374151',
+    marginBottom: 8,
   },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  btnPrimary: {
-    flex: 1,
-    backgroundColor: '#3B82F6',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  btnPrimaryText: {
-    color: '#FFFFFF',
+  emptySubtitle: {
     fontSize: 14,
-    fontWeight: '600',
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 24,
   },
-  btnOutline: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#3B82F6',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  btnOutlineText: {
-    color: '#3B82F6',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-
-  // ── List ──────────────────────────────────────────────────────────────────
-  listContent: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  separator: {
-    height: 8,
-  },
-
-  // ── Card ──────────────────────────────────────────────────────────────────
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
     borderRadius: 12,
-    padding: 12,
+    padding: 16,
+    marginBottom: 12,
+    minHeight: 88,
+    justifyContent: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
-    elevation: 2,
   },
-  avatarWrapper: {
-    marginRight: 12,
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#E5E7EB',
-  },
-  avatarFallback: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarInitials: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1D4ED8',
-  },
-  cardContent: {
-    flex: 1,
-  },
-  cardHeader: {
+  cardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 2,
+    gap: 12,
   },
-  roomName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
+  cardLogo: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+  },
+  cardLogoPlaceholder: {
+    backgroundColor: '#EFF6FF',
+  },
+  cardHeaderInfo: {
     flex: 1,
   },
-  adminBadge: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
   },
-  adminBadgeText: {
+  roleBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  roleBadgeAdmin: {
+    backgroundColor: '#DBEAFE',
+  },
+  roleBadgeReporter: {
+    backgroundColor: '#F3F4F6',
+  },
+  roleBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#2563EB',
+    color: '#374151',
   },
-  roomDescription: {
+  cardDesc: {
     fontSize: 13,
     color: '#6B7280',
     lineHeight: 18,
-    marginBottom: 4,
+    marginTop: 10,
   },
-  cardMeta: {
+  cardCode: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 3,
+  },
+  footer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    gap: 12,
+    padding: 16,
+    paddingBottom: 24,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
   },
-  roleText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  metaSeparator: {
-    fontSize: 12,
-    color: '#D1D5DB',
-  },
-  joinedText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-  },
-  chevron: {
-    fontSize: 22,
-    color: '#D1D5DB',
-    marginLeft: 8,
-  },
-
-  // ── Empty & Loading ───────────────────────────────────────────────────────
-  centered: {
+  btnJoin: {
     flex: 1,
+    borderWidth: 1.5,
+    borderColor: '#3B82F6',
+    borderRadius: 10,
+    paddingVertical: 13,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingHorizontal: 32,
-    paddingVertical: 48,
-  },
-  emptyEmoji: {
-    fontSize: 56,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontSize: 18,
+  btnJoinText: {
+    color: '#3B82F6',
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    fontSize: 15,
   },
-  emptyDescription: {
-    fontSize: 14,
-    color: '#9CA3AF',
-    textAlign: 'center',
-    lineHeight: 22,
+  btnCreate: {
+    flex: 1,
+    backgroundColor: '#3B82F6',
+    borderRadius: 10,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  btnCreateText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 15,
   },
 });

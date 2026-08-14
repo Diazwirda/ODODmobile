@@ -1,24 +1,27 @@
 import React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-
-import RoomListScreen from '@screens/room/RoomListScreen';
-import JoinRoomScreen from '@screens/room/JoinRoomScreen';
-import CreateRoomScreen from '@screens/room/CreateRoomScreen';
-import RoomSettingsScreen from '@screens/room/RoomSettingsScreen';
-import RoomTabNavigator from './RoomTabNavigator';
-
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import RoomListScreen from '../screens/room/RoomListScreen';
+import CreateRoomScreen from '../screens/room/CreateRoomScreen';
+import JoinRoomScreen from '../screens/room/JoinRoomScreen';
+import RoomTabs from './RoomTabsFixed';
+import SpotScreen from '../screens/spot/SpotScreen';
 import type { AppStackParamList } from './types';
 
-const Stack = createStackNavigator<AppStackParamList>();
+const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export default function AppStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#F9FAFB' } }}>
       <Stack.Screen name="RoomListScreen" component={RoomListScreen} />
-      <Stack.Screen name="JoinRoomScreen" component={JoinRoomScreen} />
       <Stack.Screen name="CreateRoomScreen" component={CreateRoomScreen} />
-      <Stack.Screen name="RoomTabNavigator" component={RoomTabNavigator} />
-      <Stack.Screen name="RoomSettingsScreen" component={RoomSettingsScreen} />
+      <Stack.Screen name="JoinRoomScreen" component={JoinRoomScreen} />
+      <Stack.Screen name="RoomTabs" component={RoomTabs} />
+      {/* SpotScreen sebagai modal — dapat diakses oleh reporter dari HomeScreen */}
+      <Stack.Screen
+        name="SpotModal"
+        component={SpotScreen}
+        options={{ presentation: 'modal', headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }

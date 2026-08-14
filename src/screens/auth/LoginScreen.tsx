@@ -1,275 +1,271 @@
 /**
- * LoginScreen — Layar autentikasi email/password dan Google OAuth.
- *
- * Requirements: 1.4, 1.5, 1.6, 2.1, 14.3, 14.5
+ * Login Screen
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
+  View,
   Text,
   TextInput,
-  View,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { InAppBrowser } from 'react-native-inappbrowser-reborn';
-import Config from 'react-native-config';
-import type { StackScreenProps } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { AuthStackParamList } from '../../navigation/types';
+import { useMultiAuthStore } from '../../stores/multiAuthStore';
+import { BACKENDS } from '../../config/backends';
+import * as SecureStorage from '../../services/secureStorage';
 
-import { useAuthStore } from '@stores/authStore';
-import { normalizeError } from '@api/errorNormalizer';
-import { extractGoogleToken } from '@utils/googleOAuth';
-import type { AuthStackParamList } from '@navigation/types';
-import type { NormalizedError } from '@/types/common';
-import type { AxiosError } from 'axios';
+type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
+const REMEMBERED_EMAIL_KEY = 'remembered_email';
 
-const loginSchema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(8, 'Password minimal 8 karakter'),
-});
+export default function LoginScreen({ route, navigation }: Props) {
+  const { backend } = route.params;
+  const backendConfig = BACKENDS[backend];
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+  const { loginToBackend, isLoading } = useMultiAuthStore();
 
-// ─── Navigation prop type ─────────────────────────────────────────────────────
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
 
-type Props = StackScreenProps<AuthStackParamList, 'LoginScreen'>;
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-export default function LoginScreen({ navigation }: Props) {
-  const { login, loginWithGoogle, isLoading } = useAuthStore();
-  const [generalError, setGeneralError] = useState<string | null>(null);
-
-  const {
-    control,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
-
-  // ── Submit handler ──────────────────────────────────────────────────────────
-
-  const onSubmit = async (values: LoginFormValues) => {
-    setGeneralError(null);
-    try {
-      await login(values.email, values.password);
-      // Navigation is handled by RootNavigator reacting to isAuthenticated
-    } catch (err) {
-      const normalized: NormalizedError = normalizeError(err as AxiosError);
-
-      if (normalized.validationErrors) {
-        // Map 422 validation errors to individual fields
-        const { validationErrors } = normalized;
-        if (validationErrors.email) {
-          setError('email', { message: validationErrors.email[0] });
-        }
-        if (validationErrors.password) {
-          setError('password', { message: validationErrors.password[0] });
-        }
-        // Show the general 422 message if it references both fields or neither
-        if (!validationErrors.email && !validationErrors.password) {
-          setGeneralError(normalized.message);
-        }
-      } else if (normalized.statusCode === 502 || normalized.statusCode === null) {
-        // 502 = server down, null = network error — show Alert (Req 14.1, 14.2)
-        Alert.alert('Kesalahan', normalized.message);
-      } else {
-        // 401 (wrong credentials), or any other unexpected status
-        setGeneralError(normalized.message);
+  useEffect(() => {
+    SecureStorage.getItem(REMEMBERED_EMAIL_KEY).then((savedEmail) => {
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
       }
+    });
+  }, []);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Gagal', 'Email dan kata sandi wajib diisi');
+      return;
+    }
+
+    try {
+      await loginToBackend(backend, { email, password });
+
+      if (rememberMe) {
+        await SecureStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+      } else {
+        await SecureStorage.removeItem(REMEMBERED_EMAIL_KEY);
+      }
+      // Navigation handled by RootNavigator after auth state change
+    } catch (error: any) {
+      Alert.alert(
+        'Login Gagal',
+        error.response?.data?.message || error.message || 'Email atau kata sandi salah',
+      );
     }
   };
 
-  // ── Google OAuth ────────────────────────────────────────────────────────────
-
-  const handleGoogleLogin = async () => {
-    setGeneralError(null);
-    try {
-      const baseUrl = Config.API_BASE_URL?.replace('/api', '') ?? '';
-      const url = `${baseUrl}/api/auth/google/redirect`;
-      const redirectUrl = 'odob://auth/callback';
-
-      if (await InAppBrowser.isAvailable()) {
-        const result = await InAppBrowser.openAuth(url, redirectUrl, {
-          // iOS
-          dismissButtonStyle: 'cancel',
-          preferredBarTintColor: '#ffffff',
-          preferredControlTintColor: '#000000',
-          readerMode: false,
-          animated: true,
-          // Android
-          showTitle: true,
-          toolbarColor: '#ffffff',
-          secondaryToolbarColor: '#000000',
-          navigationBarColor: '#000000',
-          navigationBarDividerColor: '#ffffff',
-          enableUrlBarHiding: true,
-          enableDefaultShare: false,
-          forceCloseOnRedirection: true,
-        });
-
-        if (result.type === 'success' && result.url) {
-          const token = extractGoogleToken(result.url);
-          if (token) {
-            await loginWithGoogle(token);
-            // Navigation handled by RootNavigator via isAuthenticated
-          } else if (result.url.includes('google_error=')) {
-            // Req 2.4 — auth_failed or no_email error
-            setGeneralError('Login dengan Google gagal. Silakan coba lagi.');
-          }
-        }
-        // result.type === 'cancel' means user dismissed — do nothing
-      } else {
-        Alert.alert(
-          'Browser Tidak Tersedia',
-          'Tidak dapat membuka browser untuk login dengan Google.'
-        );
-      }
-    } catch {
-      Alert.alert('Kesalahan', 'Gagal membuka halaman login Google. Silakan coba lagi.');
-    }
+  const handleRegister = () => {
+    navigation.navigate('Register', { backend });
   };
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <KeyboardAvoidingView
-      className="flex-1 bg-white"
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerClassName="flex-grow justify-center px-6 py-10"
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        {/* Title */}
-        <Text className="text-3xl font-bold text-gray-900 mb-8 text-center">Masuk</Text>
+        <View style={styles.content}>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Masuk ke {backendConfig.name}</Text>
 
-        {/* General error banner */}
-        {generalError ? (
-          <View className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-4">
-            <Text className="text-red-700 text-sm" accessibilityLabel={`Error: ${generalError}`}>
-              {generalError}
-            </Text>
+            {backendConfig.features.emailRestriction && (
+              <Text style={styles.subtitle}>
+                Gunakan email {backendConfig.features.emailRestriction}
+              </Text>
+            )}
           </View>
-        ) : null}
 
-        {/* Email field */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Email</Text>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
+          {/* Form */}
+          <View style={styles.form}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
               <TextInput
-                className={`border rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="contoh@email.com"
-                placeholderTextColor="#9ca3af"
-                autoCapitalize="none"
-                autoComplete="email"
+                style={styles.input}
+                placeholder="you@humanplus.co.id"
+                value={email}
+                onChangeText={setEmail}
                 keyboardType="email-address"
-                returnKeyType="next"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                accessibilityLabel="Input email"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!isLoading}
               />
-            )}
-          />
-          {errors.email ? (
-            <Text
-              className="text-red-500 text-xs mt-1"
-              accessibilityLabel={`Error email: ${errors.email.message}`}
-            >
-              {errors.email.message}
-            </Text>
-          ) : null}
-        </View>
+            </View>
 
-        {/* Password field */}
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-1">Password</Text>
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Kata Sandi</Text>
               <TextInput
-                className={`border rounded-lg px-4 py-3 text-base text-gray-900 bg-white ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Minimal 8 karakter"
-                placeholderTextColor="#9ca3af"
+                style={styles.input}
+                placeholder="Masukkan kata sandi"
+                value={password}
+                onChangeText={setPassword}
                 secureTextEntry
-                autoComplete="password"
-                returnKeyType="done"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                onSubmitEditing={handleSubmit(onSubmit)}
-                accessibilityLabel="Input password"
+                editable={!isLoading}
               />
-            )}
-          />
-          {errors.password ? (
-            <Text
-              className="text-red-500 text-xs mt-1"
-              accessibilityLabel={`Error password: ${errors.password.message}`}
+            </View>
+
+            {/* Remember Me */}
+            <TouchableOpacity
+              style={styles.rememberRow}
+              onPress={() => setRememberMe((prev) => !prev)}
+              disabled={isLoading}
+              activeOpacity={0.7}
             >
-              {errors.password.message}
-            </Text>
-          ) : null}
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Text style={styles.checkboxTick}>✓</Text>}
+              </View>
+              <Text style={styles.rememberText}>Ingat akun saya</Text>
+            </TouchableOpacity>
+
+            {/* Login Button */}
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleLogin}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.buttonText}>Masuk</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Register Link */}
+            <TouchableOpacity
+              style={styles.registerLink}
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              <Text style={styles.registerLinkText}>
+                Belum punya akun?{' '}
+                <Text style={styles.registerLinkBold}>Daftar</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        {/* Masuk button — disabled while loading (Req 14.5) */}
-        <Pressable
-          className={`rounded-lg py-4 items-center mb-4 ${
-            isLoading ? 'bg-blue-300' : 'bg-blue-600 active:bg-blue-700'
-          }`}
-          onPress={handleSubmit(onSubmit)}
-          disabled={isLoading}
-          accessibilityLabel="Tombol masuk"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isLoading }}
-        >
-          <Text className="text-white font-semibold text-base">
-            {isLoading ? 'Memproses...' : 'Masuk'}
-          </Text>
-        </Pressable>
-
-        {/* Masuk dengan Google button (Req 2.1) */}
-        <Pressable
-          className="border border-gray-300 rounded-lg py-4 items-center mb-6 active:bg-gray-50"
-          onPress={handleGoogleLogin}
-          accessibilityLabel="Masuk dengan Google"
-          accessibilityRole="button"
-        >
-          <Text className="text-gray-700 font-semibold text-base">Masuk dengan Google</Text>
-        </Pressable>
-
-        {/* Navigate to RegisterScreen */}
-        <View className="flex-row justify-center">
-          <Text className="text-gray-600 text-sm">Belum punya akun? </Text>
-          <Pressable
-            onPress={() => navigation.navigate('RegisterScreen')}
-            accessibilityLabel="Daftar akun baru"
-            accessibilityRole="link"
-          >
-            <Text className="text-blue-600 text-sm font-semibold">Daftar</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 20,
+  },
+  rememberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: -4,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#9CA3AF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+  },
+  checkboxChecked: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+  },
+  checkboxTick: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  rememberText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  input: {
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    padding: 16,
+    fontSize: 16,
+  },
+  button: {
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: '#3B82F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  registerLink: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  registerLinkText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  registerLinkBold: {
+    fontWeight: 'bold',
+    color: '#3B82F6',
+  },
+});

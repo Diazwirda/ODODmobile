@@ -1,11 +1,24 @@
-// getInitials: take first 1-2 words from name, take first char of each word, uppercase
-// Examples: "John Doe" → "JD", "Alice" → "A", "  " → "" (empty string for whitespace-only)
+/**
+ * Menghasilkan URL avatar dari foto atau placeholder dari inisial nama.
+ */
+export function getAvatarUri(
+  photo?: string | null,
+  name?: string,
+): { uri: string } {
+  if (photo) {
+    return { uri: photo };
+  }
+  const initials = getInitials(name ?? '?');
+  return {
+    uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=3B82F6&color=fff&bold=true&size=128`,
+  };
+}
+
 export function getInitials(name: string): string {
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter((w) => w.length > 0);
-  if (words.length === 0) return '';
-  if (words.length === 1) return words[0].charAt(0).toUpperCase();
-  return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (
+    parts[0].charAt(0).toUpperCase() +
+    parts[parts.length - 1].charAt(0).toUpperCase()
+  );
 }

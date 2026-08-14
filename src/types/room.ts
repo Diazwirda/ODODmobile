@@ -1,45 +1,30 @@
-import type { ImageFile } from './common';
+import type { BackendType } from '../config/backends';
 
 export type MembershipRole = 'admin' | 'reporter';
-export type InviteCodeType = 'generated' | 'manual';
-
-export interface RoomAdmin {
-  id: number;
-  name: string;
-  email: string;
-  department?: string;
-  photo?: string;
-}
 
 export interface Room {
   id: number;
   name: string;
-  slug: string;
+  slug?: string;
   description?: string;
   photo?: string;
-  invite_code: string;
-  invite_code_enabled: boolean;
-  invite_code_type: InviteCodeType;
+  logo?: string;
+  code?: string;
+  invite_code?: string;
+  room_code?: string;
+  user_role?: 'admin' | 'member' | 'reporter' | string;
+  role?: 'admin' | 'member' | 'reporter' | string;
   membership_role: MembershipRole;
   can_manage: boolean;
-  admins: RoomAdmin[];
-  joined_at: string;
+  backend: BackendType; // NEW: identifies which backend this room is from
   created_at: string;
 }
 
 export interface CreateRoomPayload {
   name: string;
   description?: string;
-  photo?: ImageFile;
-  invite_code_type: InviteCodeType;
-  invite_code?: string;
 }
 
-export interface UpdateRoomPayload {
-  name?: string;
-  description?: string;
-  photo?: ImageFile;
-  invite_code_enabled?: boolean;
-  invite_code_type?: InviteCodeType;
-  invite_code?: string;
+export interface JoinRoomPayload {
+  code: string;
 }

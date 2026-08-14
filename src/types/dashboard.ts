@@ -1,25 +1,25 @@
-import type { Department } from './common';
-import type { Violation } from './violation';
-
 export interface DashboardStats {
-  reports_today: number;
-  reports_this_week: number;
-  total_violation: number;
-  total_points_log: number;
-  departments: Department[];
+  total_violations?: number;
+  total_violation?: number;
+  pending_violations?: number;
+  verified_violations?: number;
+  total_members?: number;
+  reports_today?: number;
+  reports_this_week?: number;
+  total_points_log?: number;
+  my_points?: number;
+  my_rank?: number;
 }
-
-export type LeaderboardPeriod = 'all-time' | 'daily' | 'weekly' | 'monthly' | 'yearly';
-export type BadgeTier = 'gold' | 'silver' | 'bronze' | null;
 
 export interface LeaderboardEntry {
   id: number;
   name: string;
-  department?: string;
   photo?: string;
-  total_points: number;
+  department?: string;
+  points: number;
+  total_points?: number;
   rank: number;
-  badge: BadgeTier;
+  badge?: 'gold' | 'silver' | 'bronze' | string;
 }
 
 export interface LeaderboardResponse {
@@ -29,14 +29,3 @@ export interface LeaderboardResponse {
   per_page: number;
   total: number;
 }
-
-export interface LeaderboardFilters {
-  period: LeaderboardPeriod;
-  department: string;
-  sort: 'asc' | 'desc';
-  per_page: number;
-  page: number;
-}
-
-// Re-export Violation for dashboard usage (profile history uses it)
-export type { Violation };

@@ -1,694 +1,329 @@
 /**
- * RegisterScreen — Task 12.3
- *
- * Full registration form using React Hook Form + Zod.
- * Fields: name, email, password, password_confirmation, department (optional), position (optional).
- * Department is fetched from GET /api/departments and shown as a modal picker.
- * On 422 responses, server validation errors are applied per field.
- *
- * Requirements: 1.1, 1.2, 1.3, 14.5
+ * Register Screen
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Modal,
-  FlatList,
-  ActivityIndicator,
+  StyleSheet,
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  StyleSheet,
+  ScrollView,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import type { StackScreenProps } from '@react-navigation/stack';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { AuthStackParamList } from '../../navigation/types';
+import { useMultiAuthStore } from '../../stores/multiAuthStore';
+import { BACKENDS } from '../../config/backends';
 
-import apiClient from '@api/client';
-import { useAuthStore } from '@stores/authStore';
-import type { Department, NormalizedError } from '@/types/common';
-import type { AuthStackParamList } from '@navigation/types';
+type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
-// ─── Zod Schema ───────────────────────────────────────────────────────────────
+export default function RegisterScreen({ route, navigation }: Props) {
+  const { backend } = route.params;
+  const backendConfig = BACKENDS[backend];
 
-const registerSchema = z
-  .object({
-    name: z.string().min(1, 'Nama lengkap wajib diisi'),
-    email: z.string().email('Email tidak valid'),
-    password: z.string().min(8, 'Password minimal 8 karakter'),
-    password_confirmation: z.string(),
-    department: z.string().optional(),
-    position: z.string().optional(),
-  })
-  .refine((data) => data.password === data.password_confirmation, {
-    message: 'Konfirmasi password tidak cocok',
-    path: ['password_confirmation'],
+  const { registerToBackend, isLoading } = useMultiAuthStore();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    department: '',
+    position: '',
   });
 
-type RegisterFormValues = z.infer<typeof registerSchema>;
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
-// ─── Navigation Props ─────────────────────────────────────────────────────────
+  const handleRegister = async () => {
+    if (!formData.name || !formData.email || !formData.password) {
+      Alert.alert('Gagal', 'Lengkapi semua field wajib');
+      return;
+    }
 
-type Props = StackScreenProps<AuthStackParamList, 'RegisterScreen'>;
+    if (formData.password.length < 8) {
+      Alert.alert('Gagal', 'Kata sandi minimal 8 karakter');
+      return;
+    }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+    if (formData.password !== formData.password_confirmation) {
+      Alert.alert('Gagal', 'Konfirmasi kata sandi tidak cocok');
+      return;
+    }
 
-export default function RegisterScreen({ navigation }: Props) {
-  const { register: authRegister, isLoading } = useAuthStore();
+    try {
+      await registerToBackend(backend, formData);
+      // Navigation handled by RootNavigator after auth state change
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'Registrasi gagal';
 
-  // Department list state
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [departmentsLoading, setDepartmentsLoading] = useState(false);
-  const [departmentModalVisible, setDepartmentModalVisible] = useState(false);
-
-  // ─── Form ────────────────────────────────────────────────────────────────────
-
-  const {
-    control,
-    handleSubmit,
-    setValue,
-    watch,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      password_confirmation: '',
-      department: '',
-      position: '',
-    },
-  });
-
-  const selectedDepartment = watch('department');
-
-  // ─── Fetch Departments ───────────────────────────────────────────────────────
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchDepartments = async () => {
-      setDepartmentsLoading(true);
-      try {
-        const { data } = await apiClient.get<Department[]>('/departments');
-        if (!cancelled) {
-          setDepartments(data);
-        }
-      } catch {
-        // Non-critical — department is optional, silently fail
-      } finally {
-        if (!cancelled) {
-          setDepartmentsLoading(false);
-        }
+      const errors = error.response?.data?.errors;
+      if (errors) {
+        const errorList = Object.values(errors).flat().join('\n');
+        Alert.alert('Validasi Gagal', errorList);
+      } else {
+        Alert.alert('Registrasi Gagal', errorMessage);
       }
-    };
+    }
+  };
 
-    fetchDepartments();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // ─── Submit ──────────────────────────────────────────────────────────────────
-
-  const onSubmit = useCallback(
-    async (values: RegisterFormValues) => {
-      try {
-        await authRegister({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-          password_confirmation: values.password_confirmation,
-          department: values.department || undefined,
-          position: values.position || undefined,
-        });
-        // Navigation is handled by RootNavigator reacting to isAuthenticated state change
-      } catch (error) {
-        const normalizedError = error as NormalizedError;
-
-        if (normalizedError.statusCode === 422 && normalizedError.validationErrors) {
-          // Apply per-field validation errors from server
-          const fieldMap: Record<string, keyof RegisterFormValues> = {
-            name: 'name',
-            email: 'email',
-            password: 'password',
-            password_confirmation: 'password_confirmation',
-            department: 'department',
-            position: 'position',
-          };
-
-          Object.entries(normalizedError.validationErrors).forEach(([field, messages]) => {
-            const formField = fieldMap[field];
-            if (formField) {
-              setError(formField, {
-                type: 'server',
-                message: messages[0],
-              });
-            }
-          });
-        } else {
-          Alert.alert(
-            'Pendaftaran Gagal',
-            normalizedError.message ?? 'Terjadi kesalahan. Silakan coba lagi.'
-          );
-        }
-      }
-    },
-    [authRegister, setError]
-  );
-
-  // ─── Department display label ─────────────────────────────────────────────
-
-  const departmentLabel =
-    departments.find((d) => d.name === selectedDepartment)?.name ?? selectedDepartment ?? '';
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
-
-  const isButtonDisabled = isLoading || isSubmitting;
+  const handleBackToLogin = () => {
+    navigation.goBack();
+  };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
       >
-        {/* ─── Header ─────────────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <Text style={styles.title} accessibilityRole="header">
-            Buat Akun Baru
-          </Text>
-          <Text style={styles.subtitle}>Isi data diri Anda untuk mendaftar</Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={handleBackToLogin}
+            >
+              <Text style={styles.backButtonText}>← Kembali ke Login</Text>
+            </TouchableOpacity>
 
-        {/* ─── Nama Lengkap ────────────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Nama Lengkap</Text>
-          <Controller
-            control={control}
-            name="name"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.name ? styles.inputError : null]}
-                placeholder="Masukkan nama lengkap"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={onChange}
-                onBlur={onBlur}
-                value={value}
-                autoCapitalize="words"
-                autoComplete="name"
-                returnKeyType="next"
-                accessibilityLabel="Nama lengkap"
-              />
+            <Text style={styles.title}>Daftar ke {backendConfig.name}</Text>
+
+            {backendConfig.features.emailRestriction && (
+              <Text style={styles.subtitle}>
+                Gunakan email {backendConfig.features.emailRestriction}
+              </Text>
             )}
-          />
-          {errors.name ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.name.message}
-            </Text>
-          ) : null}
-        </View>
+          </View>
 
-        {/* ─── Email ───────────────────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Email</Text>
-          <Controller
-            control={control}
-            name="email"
-            render={({ field: { onChange, onBlur, value } }) => (
+          {/* Form */}
+          <View style={styles.form}>
+            {/* Name */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Nama Lengkap <Text style={styles.required}>*</Text>
+              </Text>
               <TextInput
-                style={[styles.input, errors.email ? styles.inputError : null]}
-                placeholder="Masukkan alamat email"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={onChange}
-                onBlur={onBlur}
-                value={value}
+                style={styles.input}
+                placeholder="John Doe"
+                value={formData.name}
+                onChangeText={(value) => updateField('name', value)}
+                autoCapitalize="words"
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Email */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Email <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@humanplus.co.id"
+                value={formData.email}
+                onChangeText={(value) => updateField('email', value)}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoComplete="email"
-                returnKeyType="next"
-                accessibilityLabel="Email"
+                autoCorrect={false}
+                editable={!isLoading}
               />
-            )}
-          />
-          {errors.email ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.email.message}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* ─── Password ────────────────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Password</Text>
-          <Controller
-            control={control}
-            name="password"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.password ? styles.inputError : null]}
-                placeholder="Minimal 8 karakter"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={onChange}
-                onBlur={onBlur}
-                value={value}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="new-password"
-                returnKeyType="next"
-                accessibilityLabel="Password"
-              />
-            )}
-          />
-          {errors.password ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.password.message}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* ─── Konfirmasi Password ─────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>Konfirmasi Password</Text>
-          <Controller
-            control={control}
-            name="password_confirmation"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.password_confirmation ? styles.inputError : null]}
-                placeholder="Ulangi password"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={onChange}
-                onBlur={onBlur}
-                value={value}
-                secureTextEntry
-                autoCapitalize="none"
-                autoComplete="new-password"
-                returnKeyType="next"
-                accessibilityLabel="Konfirmasi password"
-              />
-            )}
-          />
-          {errors.password_confirmation ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.password_confirmation.message}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* ─── Departemen ──────────────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>
-            Departemen <Text style={styles.optionalText}>(opsional)</Text>
-          </Text>
-
-          {departmentsLoading ? (
-            <View style={[styles.input, styles.pickerLoading]}>
-              <ActivityIndicator size="small" color="#6B7280" />
-            </View>
-          ) : departments.length > 0 ? (
-            /* Use modal picker when departments are available */
-            <>
-              <TouchableOpacity
-                style={[
-                  styles.input,
-                  styles.pickerButton,
-                  errors.department ? styles.inputError : null,
-                ]}
-                onPress={() => setDepartmentModalVisible(true)}
-                accessibilityLabel="Pilih departemen"
-                accessibilityRole="button"
-              >
-                <Text
-                  style={departmentLabel ? styles.pickerValueText : styles.pickerPlaceholderText}
-                >
-                  {departmentLabel || 'Pilih departemen'}
-                </Text>
-                <Text style={styles.pickerChevron}>▼</Text>
-              </TouchableOpacity>
-
-              {/* Clear department button */}
-              {selectedDepartment ? (
-                <TouchableOpacity
-                  onPress={() => setValue('department', '')}
-                  style={styles.clearButton}
-                  accessibilityLabel="Hapus departemen"
-                >
-                  <Text style={styles.clearButtonText}>Hapus pilihan</Text>
-                </TouchableOpacity>
-              ) : null}
-            </>
-          ) : (
-            /* Fallback to free-text when departments can't be loaded */
-            <Controller
-              control={control}
-              name="department"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <TextInput
-                  style={[styles.input, errors.department ? styles.inputError : null]}
-                  placeholder="Masukkan nama departemen"
-                  placeholderTextColor="#9CA3AF"
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  value={value}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                  accessibilityLabel="Departemen"
-                />
-              )}
-            />
-          )}
-
-          {errors.department ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.department.message}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* ─── Jabatan ─────────────────────────────────────────────────────── */}
-        <View style={styles.fieldGroup}>
-          <Text style={styles.label}>
-            Jabatan <Text style={styles.optionalText}>(opsional)</Text>
-          </Text>
-          <Controller
-            control={control}
-            name="position"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={[styles.input, errors.position ? styles.inputError : null]}
-                placeholder="Masukkan jabatan Anda"
-                placeholderTextColor="#9CA3AF"
-                onChangeText={onChange}
-                onBlur={onBlur}
-                value={value}
-                autoCapitalize="words"
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit(onSubmit)}
-                accessibilityLabel="Jabatan"
-              />
-            )}
-          />
-          {errors.position ? (
-            <Text style={styles.errorText} accessibilityRole="alert">
-              {errors.position.message}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* ─── Daftar Button ───────────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={[styles.submitButton, isButtonDisabled ? styles.submitButtonDisabled : null]}
-          onPress={handleSubmit(onSubmit)}
-          disabled={isButtonDisabled}
-          accessibilityLabel="Daftar"
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isButtonDisabled }}
-        >
-          {isLoading || isSubmitting ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.submitButtonText}>Daftar</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* ─── Login Link ──────────────────────────────────────────────────── */}
-        <TouchableOpacity
-          style={styles.loginLink}
-          onPress={() => navigation.navigate('LoginScreen')}
-          accessibilityLabel="Sudah punya akun? Masuk"
-          accessibilityRole="button"
-        >
-          <Text style={styles.loginLinkText}>
-            Sudah punya akun? <Text style={styles.loginLinkBold}>Masuk</Text>
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* ─── Department Picker Modal ────────────────────────────────────────── */}
-      <Modal
-        visible={departmentModalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setDepartmentModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setDepartmentModalVisible(false)}
-          accessibilityLabel="Tutup pilihan departemen"
-        >
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Pilih Departemen</Text>
-              <TouchableOpacity
-                onPress={() => setDepartmentModalVisible(false)}
-                accessibilityLabel="Tutup"
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalCloseText}>Tutup</Text>
-              </TouchableOpacity>
+              <Text style={styles.hint}>
+                Hanya email @humanplus.co.id yang diperbolehkan
+              </Text>
             </View>
 
-            <FlatList
-              data={departments}
-              keyExtractor={(item) => String(item.id)}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    selectedDepartment === item.name ? styles.modalItemSelected : null,
-                  ]}
-                  onPress={() => {
-                    setValue('department', item.name, {
-                      shouldValidate: true,
-                    });
-                    setDepartmentModalVisible(false);
-                  }}
-                  accessibilityLabel={`Pilih ${item.name}`}
-                  accessibilityRole="button"
-                >
-                  <Text
-                    style={[
-                      styles.modalItemText,
-                      selectedDepartment === item.name ? styles.modalItemTextSelected : null,
-                    ]}
-                  >
-                    {item.name}
-                  </Text>
-                  {selectedDepartment === item.name ? (
-                    <Text style={styles.checkmark}>✓</Text>
-                  ) : null}
-                </TouchableOpacity>
+            {/* Password */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Kata Sandi <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Min. 8 karakter"
+                value={formData.password}
+                onChangeText={(value) => updateField('password', value)}
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Password Confirmation */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Konfirmasi Kata Sandi <Text style={styles.required}>*</Text>
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Masukkan ulang kata sandi"
+                value={formData.password_confirmation}
+                onChangeText={(value) =>
+                  updateField('password_confirmation', value)
+                }
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Department (Optional) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Departemen (opsional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="contoh: Engineering, Marketing"
+                value={formData.department}
+                onChangeText={(value) => updateField('department', value)}
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Position (Optional) */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Posisi (opsional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="contoh: Developer, Manager"
+                value={formData.position}
+                onChangeText={(value) => updateField('position', value)}
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Register Button */}
+            <TouchableOpacity
+              style={[styles.button, isLoading && styles.buttonDisabled]}
+              onPress={handleRegister}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.buttonText}>Buat Akun</Text>
               )}
-              ItemSeparatorComponent={() => <View style={styles.modalSeparator} />}
-            />
+            </TouchableOpacity>
+
+            {/* Login Link */}
+            <TouchableOpacity
+              style={styles.loginLink}
+              onPress={handleBackToLogin}
+              disabled={isLoading}
+            >
+              <Text style={styles.loginLinkText}>
+                Sudah punya akun?{' '}
+                <Text style={styles.loginLinkBold}>Masuk</Text>
+              </Text>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-      </Modal>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  flex: {
+  container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F9FAFB',
+  },
+  keyboardView: {
+    flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
-    paddingBottom: 32,
+    padding: 20,
   },
-
-  // Header
   header: {
-    marginBottom: 32,
+    alignItems: 'center',
+    marginBottom: 24,
+    marginTop: 20,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#3B82F6',
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#666',
   },
-
-  // Field
-  fieldGroup: {
-    marginBottom: 16,
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 6,
+    fontWeight: '600',
+    color: '#333',
   },
-  optionalText: {
-    fontWeight: '400',
-    color: '#9CA3AF',
+  required: {
+    color: '#EF4444',
   },
   input: {
+    backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderColor: '#E5E7EB',
     borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: '#111827',
-    backgroundColor: '#F9FAFB',
+    padding: 16,
+    fontSize: 16,
   },
-  inputError: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FFF5F5',
-  },
-  errorText: {
+  hint: {
     fontSize: 12,
-    color: '#EF4444',
-    marginTop: 4,
+    color: '#999',
+    fontStyle: 'italic',
   },
-
-  // Picker button
-  pickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  pickerLoading: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickerValueText: {
-    fontSize: 15,
-    color: '#111827',
-    flex: 1,
-  },
-  pickerPlaceholderText: {
-    fontSize: 15,
-    color: '#9CA3AF',
-    flex: 1,
-  },
-  pickerChevron: {
-    fontSize: 11,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-  clearButton: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  clearButtonText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textDecorationLine: 'underline',
-  },
-
-  // Submit button
-  submitButton: {
-    backgroundColor: '#2563EB',
+  button: {
+    paddingVertical: 16,
     borderRadius: 8,
-    paddingVertical: 14,
     alignItems: 'center',
     marginTop: 8,
-    marginBottom: 16,
+    backgroundColor: '#3B82F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  submitButtonDisabled: {
-    backgroundColor: '#93C5FD',
+  buttonDisabled: {
+    opacity: 0.6,
   },
-  submitButtonText: {
-    color: '#FFFFFF',
+  buttonText: {
+    color: '#FFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
-
-  // Login link
   loginLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    marginTop: 8,
   },
   loginLinkText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#666',
   },
   loginLinkBold: {
-    color: '#2563EB',
-    fontWeight: '600',
-  },
-
-  // Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '60%',
-    paddingBottom: 24,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-  },
-  modalCloseText: {
-    fontSize: 14,
-    color: '#2563EB',
-    fontWeight: '500',
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-  },
-  modalItemSelected: {
-    backgroundColor: '#EFF6FF',
-  },
-  modalItemText: {
-    fontSize: 15,
-    color: '#111827',
-    flex: 1,
-  },
-  modalItemTextSelected: {
-    color: '#2563EB',
-    fontWeight: '500',
-  },
-  checkmark: {
-    fontSize: 16,
-    color: '#2563EB',
-    marginLeft: 8,
-  },
-  modalSeparator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#F3F4F6',
-    marginHorizontal: 20,
+    fontWeight: 'bold',
+    color: '#3B82F6',
   },
 });

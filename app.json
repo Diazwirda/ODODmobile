@@ -1,16 +1,26 @@
 {
   "expo": {
-    "name": "ODOB Mobile",
+    "name": "One Day One Behavior Daily",
     "slug": "odob-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "platforms": ["ios", "android"],
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "ios": {
       "supportsTablet": false,
-      "deploymentTarget": "16.4"
+      "deploymentTarget": "16.4",
+      "bundleIdentifier": "com.odob.mobile"
     },
     "android": {
+      "package": "com.odob.mobile",
       "minSdkVersion": 24
-    }
+    },
+    "plugins": [
+      "expo-status-bar",
+      "expo-sharing"
+    ]
   }
 }
