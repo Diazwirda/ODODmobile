@@ -5,7 +5,12 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "icon": "./assets/icon.png",
+    "icon": "./src/assets/icon.png",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "platforms": [
       "ios",
       "android"
@@ -13,14 +18,24 @@
     "ios": {
       "supportsTablet": false,
       "deploymentTarget": "16.4",
-      "bundleIdentifier": "com.odob.mobile"
+      "bundleIdentifier": "com.odob.mobile",
+      "splash": {
+        "image": "./src/assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
+      }
     },
     "android": {
       "package": "com.odob.mobile",
       "minSdkVersion": 24,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#FFFFFF"
+      },
+      "splash": {
+        "image": "./src/assets/splash.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#ffffff"
       }
     },
     "plugins": [
