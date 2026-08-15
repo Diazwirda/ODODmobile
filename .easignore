@@ -31,3 +31,7 @@ coverage/
 
 # Expo dev logs
 .expo/dev/
+
+# Mengabaikan folder native lama agar Expo mem-build ulang menggunakan app.json terbaru
+/android
+/ios

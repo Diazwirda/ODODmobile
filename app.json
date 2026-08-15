@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "icon": "./src/assets/icon.png",
-    "splash": {
-      "image": "./src/assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "platforms": [
       "ios",
       "android"
@@ -18,29 +13,26 @@
     "ios": {
       "supportsTablet": false,
       "deploymentTarget": "16.4",
-      "bundleIdentifier": "com.odob.mobile",
-      "splash": {
-        "image": "./src/assets/splash.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#ffffff"
-      }
+      "bundleIdentifier": "com.odob.mobile"
     },
     "android": {
       "package": "com.odob.mobile",
-      "minSdkVersion": 24,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#FFFFFF"
-      },
-      "splash": {
-        "image": "./src/assets/splash.png",
-        "resizeMode": "contain",
-        "backgroundColor": "#ffffff"
       }
     },
     "plugins": [
       "expo-status-bar",
       "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
       [
         "expo-build-properties",
         {
@@ -48,7 +40,8 @@
             "compileSdkVersion": 36,
             "targetSdkVersion": 36,
             "buildToolsVersion": "35.0.0",
-            "kotlinVersion": "2.1.20"
+            "kotlinVersion": "2.1.20",
+            "minSdkVersion": 24
           }
         }
       ]
