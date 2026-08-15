@@ -1,10 +1,11 @@
 {
   "expo": {
-    "name": "One Day One Behavior Daily",
+    "name": "odob-mobile",
     "slug": "odob-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
     "platforms": [
       "ios",
       "android"
@@ -16,7 +17,11 @@
     },
     "android": {
       "package": "com.odob.mobile",
-      "minSdkVersion": 24
+      "minSdkVersion": 24,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
       "expo-status-bar",
