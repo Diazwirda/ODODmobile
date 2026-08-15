@@ -28,12 +28,17 @@ const ROOM_PLACEHOLDER_IMAGE = require('../../assets/room-placeholder.png');
 type Props = NativeStackScreenProps<AppStackParamList, 'RoomListScreen'>;
 
 export default function RoomListScreen({ navigation }: Props) {
-  const { setActiveRoom } = useRoomStore();
+  const { setActiveRoom, clearActiveRoom } = useRoomStore();
 
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Clear active room when viewing room list
+  useEffect(() => {
+    clearActiveRoom();
+  }, [clearActiveRoom]);
 
   const loadRooms = useCallback(async () => {
     setError(null);

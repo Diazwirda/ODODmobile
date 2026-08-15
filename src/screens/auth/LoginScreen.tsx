@@ -76,7 +76,7 @@ export default function LoginScreen({ route }: Props) {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Masuk ke {backendConfig.name}</Text>
+            <Text style={styles.title}>🚀 Masuk ke {backendConfig.name}</Text>
             {backendConfig.features.emailRestriction && (
               <Text style={styles.subtitle}>
                 Gunakan email {backendConfig.features.emailRestriction}
@@ -104,9 +104,10 @@ export default function LoginScreen({ route }: Props) {
               <Text style={styles.label}>Kata Sandi</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
-                  key={showPassword ? 'password-visible' : 'password-hidden'}
+                  key={`password-${showPassword}`}
                   style={styles.passwordInput}
                   placeholder="Masukkan kata sandi"
+                  placeholderTextColor="#9CA3AF"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
@@ -114,6 +115,8 @@ export default function LoginScreen({ route }: Props) {
                   autoCapitalize="none"
                   autoCorrect={false}
                   textContentType="password"
+                  underlineColorAndroid="transparent"
+                  defaultValue={password}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
@@ -215,6 +218,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     fontSize: 16,
+    color: '#1A1A1A',
+    includeFontPadding: false,
   },
   eyeButton: {
     paddingHorizontal: 14,
