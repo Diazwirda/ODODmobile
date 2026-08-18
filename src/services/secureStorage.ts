@@ -16,8 +16,24 @@ export async function setItem(key: string, value: string): Promise<void> {
 
 export async function getItem(key: string): Promise<string | null> {
   const service = `${SERVICE_PREFIX}-${key}`;
-  const result = await Keychain.getGenericPassword({ service });
-  return result ? result.password : null;
+  try {
+    const result = await Keychain.getGenericPassword({ service });
+    return result ? result.password : null;
+  } catch (error) {
+    // Handle decryption errors (e.g. when app signature changes or keystore corrupted)
+    if (error instanceof Error && error.message.includes('decrypt')) {
+      console.warn(`[SecureStorage] Decryption error for ${key}, clearing corrupted data`);
+      // Clear corrupted data
+      try {
+        await Keychain.resetGenericPassword({ service });
+      } catch (resetError) {
+        console.error('[SecureStorage] Failed to reset corrupted keychain:', resetError);
+      }
+      return null;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 export async function removeItem(key: string): Promise<void> {
@@ -40,11 +56,25 @@ export async function getToken(): Promise<string | null> {
   // Try new location first, fallback to legacy
   let token = await getItem('odob_token');
   if (!token) {
-    const result = await Keychain.getGenericPassword({ service: LEGACY_SERVICE });
-    token = result ? result.password : null;
-    // Migrate to new location if found in legacy
-    if (token) {
-      await setItem('odob_token', token);
+    try {
+      const result = await Keychain.getGenericPassword({ service: LEGACY_SERVICE });
+      token = result ? result.password : null;
+      // Migrate to new location if found in legacy
+      if (token) {
+        await setItem('odob_token', token);
+      }
+    } catch (error) {
+      // Handle decryption errors for legacy tokens
+      if (error instanceof Error && error.message.includes('decrypt')) {
+        console.warn('[SecureStorage] Legacy token decryption error, clearing');
+        try {
+          await Keychain.resetGenericPassword({ service: LEGACY_SERVICE });
+        } catch (resetError) {
+          console.error('[SecureStorage] Failed to reset legacy keychain:', resetError);
+        }
+      } else {
+        throw error;
+      }
     }
   }
   return token;
