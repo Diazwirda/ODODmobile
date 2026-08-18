@@ -63,6 +63,7 @@ export class UnifiedRoomService {
 
   /**
    * Create room in specific backend
+   * NOTE: Room creation is a global operation and should not include X-Room-Id header
    */
   static async createRoom(
     backend: BackendType,
@@ -70,13 +71,17 @@ export class UnifiedRoomService {
   ): Promise<Room> {
     const client = spotClient();
 
-    const { data } = await client.post<Room>('/rooms', payload);
+    // Create room without X-Room-Id header (it's a global operation)
+    const { data } = await client.post<Room>('/rooms', payload, {
+      skipRoomId: true, // Flag to skip X-Room-Id header
+    } as any);
     
     return normalizeRoom(data, backend);
   }
 
   /**
    * Join room in specific backend
+   * NOTE: Joining room is a global operation and should not include X-Room-Id header
    */
   static async joinRoom(
     backend: BackendType,
@@ -84,9 +89,11 @@ export class UnifiedRoomService {
   ): Promise<{ room: Room; message: string }> {
     const client = spotClient();
 
+    // Join room without X-Room-Id header (it's a global operation)
     const { data } = await client.post<{ message: string; room: Room }>(
       '/rooms/join',
       { code },
+      { skipRoomId: true } as any, // Flag to skip X-Room-Id header
     );
 
     return {

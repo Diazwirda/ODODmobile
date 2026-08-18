@@ -50,7 +50,9 @@ export const createApiClient = (options: ClientOptions): AxiosInstance => {
       }
 
       // Get active room ID if function provided
-      if (options.getActiveRoomId) {
+      // Skip if request explicitly sets skipRoomId flag
+      const skipRoomId = (requestConfig as any).skipRoomId;
+      if (options.getActiveRoomId && !skipRoomId) {
         const roomId = await options.getActiveRoomId();
         if (roomId) {
           requestConfig.headers['X-Room-Id'] = String(roomId);
