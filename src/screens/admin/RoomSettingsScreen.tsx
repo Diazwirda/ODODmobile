@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Clipboard from 'expo-clipboard';
 import { launchImageLibrary } from 'react-native-image-picker';
 import ScreenHeader from '../../components/ScreenHeader';
 import { useRoomStore } from '../../stores/roomStore';
@@ -23,6 +24,8 @@ export default function RoomSettingsScreen() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [addAdminEmail, setAddAdminEmail] = useState('');
   const [addingAdmin, setAddingAdmin] = useState(false);
+  const [togglingInviteCode, setTogglingInviteCode] = useState(false);
+  const [regeneratingCode, setRegeneratingCode] = useState(false);
 
   const handleSave = useCallback(async () => {
     if (!activeRoom || !name.trim()) {
@@ -145,6 +148,60 @@ export default function RoomSettingsScreen() {
     );
   }, [activeRoom]);
 
+  const handleToggleInviteCode = useCallback(async () => {
+    if (!activeRoom) return;
+    const newStatus = !activeRoom.invite_code_enabled;
+    const action = newStatus ? 'mengaktifkan' : 'menonaktifkan';
+    
+    setTogglingInviteCode(true);
+    try {
+      await adminApi.updateRoom(activeRoom.id, {
+        invite_code_enabled: newStatus,
+      });
+      await fetchRooms();
+      Alert.alert('Berhasil', `Kode undangan berhasil ${action === 'mengaktifkan' ? 'diaktifkan' : 'dinonaktifkan'}.`);
+    } catch (err) {
+      Alert.alert('Gagal', handleApiError(err));
+    } finally {
+      setTogglingInviteCode(false);
+    }
+  }, [activeRoom, fetchRooms]);
+
+  const handleRegenerateInviteCode = useCallback(() => {
+    if (!activeRoom || activeRoom.invite_code_type !== 'generated') return;
+    
+    Alert.alert(
+      'Regenerate Kode Undangan',
+      'Generate kode undangan baru? Kode lama tidak akan bisa digunakan lagi.',
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Generate Baru',
+          onPress: async () => {
+            setRegeneratingCode(true);
+            try {
+              await adminApi.updateRoom(activeRoom.id, {
+                regenerate_invite_code: true,
+              });
+              await fetchRooms();
+              Alert.alert('Berhasil', 'Kode undangan baru telah di-generate.');
+            } catch (err) {
+              Alert.alert('Gagal', handleApiError(err));
+            } finally {
+              setRegeneratingCode(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [activeRoom, fetchRooms]);
+
+  const handleCopyInviteCode = useCallback(async () => {
+    if (!activeRoom?.invite_code) return;
+    await Clipboard.setStringAsync(activeRoom.invite_code);
+    Alert.alert('Tersalin', 'Kode undangan telah disalin ke clipboard.');
+  }, [activeRoom]);
+
   if (!activeRoom) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -223,6 +280,72 @@ export default function RoomSettingsScreen() {
 
           <View style={styles.divider} />
 
+          {/* Invite Code Section */}
+          <Text style={styles.sectionTitle}>Kode Undangan</Text>
+          <Text style={styles.sectionHint}>
+            Kode undangan digunakan untuk mengajak anggota baru bergabung ke perusahaan ini.
+          </Text>
+
+          <View style={styles.inviteCodeBox}>
+            <View style={styles.inviteCodeHeader}>
+              <View style={styles.inviteCodeLeft}>
+                <Text style={styles.inviteCodeLabel}>Kode:</Text>
+                <Text style={styles.inviteCodeValue}>{activeRoom.invite_code || activeRoom.invite_code || 'N/A'}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.copyBtn}
+                onPress={handleCopyInviteCode}
+                disabled={!activeRoom.invite_code}>
+                <Text style={styles.copyBtnText}>📋 Salin</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inviteCodeStatusRow}>
+              <View style={styles.statusLeft}>
+                <View style={[
+                  styles.statusDot,
+                  activeRoom.invite_code_enabled ? styles.statusDotActive : styles.statusDotInactive
+                ]} />
+                <Text style={styles.statusText}>
+                  {activeRoom.invite_code_enabled ? 'Aktif' : 'Nonaktif'}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.toggleBtn, togglingInviteCode && styles.disabledBtn]}
+                onPress={handleToggleInviteCode}
+                disabled={togglingInviteCode}>
+                {togglingInviteCode ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <Text style={styles.toggleBtnText}>
+                    {activeRoom.invite_code_enabled ? 'Nonaktifkan' : 'Aktifkan'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {activeRoom.invite_code_type === 'generated' && (
+              <TouchableOpacity
+                style={[styles.regenerateBtn, regeneratingCode && styles.disabledBtn]}
+                onPress={handleRegenerateInviteCode}
+                disabled={regeneratingCode}>
+                {regeneratingCode ? (
+                  <ActivityIndicator color="#3B82F6" size="small" />
+                ) : (
+                  <Text style={styles.regenerateBtnText}>🔄 Generate Kode Baru</Text>
+                )}
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.inviteCodeHint}>
+              {activeRoom.invite_code_enabled
+                ? 'Kode undangan aktif. Anggota baru dapat bergabung menggunakan kode ini.'
+                : 'Kode undangan dinonaktifkan. Anggota baru tidak dapat bergabung.'}
+            </Text>
+          </View>
+
+          <View style={styles.divider} />
+
           <Text style={styles.sectionTitle}>Tambah Admin</Text>
           <Text style={styles.sectionHint}>Hanya email {ADMIN_EMAIL_DOMAIN} yang dapat dijadikan admin.</Text>
           <View style={styles.addAdminRow}>
@@ -286,4 +409,103 @@ const styles = StyleSheet.create({
   addAdminBtnText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   deleteBtn: { borderWidth: 1, borderColor: '#FCA5A5', borderRadius: 8, paddingVertical: 13, alignItems: 'center', backgroundColor: '#FEF2F2' },
   deleteBtnText: { color: '#EF4444', fontSize: 15, fontWeight: '600' },
+  
+  // Invite Code Styles
+  inviteCodeBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 8,
+  },
+  inviteCodeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  inviteCodeLeft: {
+    flex: 1,
+  },
+  inviteCodeLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  inviteCodeValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    letterSpacing: 2,
+  },
+  copyBtn: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  copyBtnText: {
+    color: '#2563EB',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  inviteCodeStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  statusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statusDotActive: {
+    backgroundColor: '#10B981',
+  },
+  statusDotInactive: {
+    backgroundColor: '#EF4444',
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  toggleBtn: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  toggleBtnText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  regenerateBtn: {
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 12,
+  },
+  regenerateBtnText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  inviteCodeHint: {
+    fontSize: 12,
+    color: '#6B7280',
+    lineHeight: 16,
+  },
 });

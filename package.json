@@ -12,6 +12,7 @@
     "babel-preset-expo": "~56.0.0",
     "expo": "~56.0.19",
     "expo-build-properties": "~56.0.25",
+    "expo-clipboard": "~56.0.4",
     "expo-dev-client": "~56.0.24",
     "expo-file-system": "~56.0.9",
     "expo-image-manipulator": "~56.0.24",

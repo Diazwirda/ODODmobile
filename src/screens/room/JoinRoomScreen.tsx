@@ -45,18 +45,32 @@ export default function JoinRoomScreen({ navigation }: Props) {
   const onSubmit = async (values: FormData) => {
     setGeneralError(null);
     setIsLoading(true);
+    
+    let joinSucceeded = false;
+    let joinedRoom = null;
+    
     try {
       const room = await joinRoom({ code: values.code });
+      joinSucceeded = true;
+      joinedRoom = room;
       setActiveRoom(room);
-      // Refresh room list agar data terbaru
-      fetchRooms().catch(() => {});
+      
+      // Refresh room list agar data terbaru (non-blocking)
+      fetchRooms().catch(() => {
+        // Silent fail - tidak perlu tampilkan error karena join sudah berhasil
+      });
+      
+      // Navigate to room
       navigation.replace('RoomTabs', { screen: 'HomeTab' } as never);
     } catch (err: unknown) {
-      const fieldErrors = getValidationErrors(err);
-      if (fieldErrors?.code) {
-        setError('code', { message: fieldErrors.code });
-      } else {
-        setGeneralError(handleApiError(err));
+      // Only show error if join actually failed
+      if (!joinSucceeded) {
+        const fieldErrors = getValidationErrors(err);
+        if (fieldErrors?.code) {
+          setError('code', { message: fieldErrors.code });
+        } else {
+          setGeneralError(handleApiError(err));
+        }
       }
     } finally {
       setIsLoading(false);
@@ -79,7 +93,7 @@ export default function JoinRoomScreen({ navigation }: Props) {
           >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Gabung Room</Text>
+          <Text style={styles.headerTitle}>Gabung Perusahaan</Text>
           <View style={styles.backBtn} />
         </View>
 
@@ -91,7 +105,7 @@ export default function JoinRoomScreen({ navigation }: Props) {
           <View style={styles.infoBox}>
             <Text style={styles.infoEmoji}>🎫</Text>
             <Text style={styles.infoText}>
-              Masukkan kode undangan yang Anda terima dari admin room.
+              Masukkan kode undangan yang Anda terima dari admin perusahaan.
             </Text>
           </View>
 

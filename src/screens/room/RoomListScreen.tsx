@@ -16,6 +16,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AppNavbar from '../../components/AppNavbar';
 import { useRoomStore } from '../../stores/roomStore';
@@ -45,17 +46,26 @@ export default function RoomListScreen({ navigation }: Props) {
     setIsLoading(true);
     try {
       const allRooms = await UnifiedRoomService.getAllRooms();
+      if (__DEV__) {
+        console.log('[RoomListScreen] Loaded rooms:', allRooms.map(r => ({ 
+          id: r.id, 
+          name: r.name 
+        })));
+      }
       setRooms(allRooms);
     } catch (err: any) {
-      setError(err.message || 'Gagal memuat daftar room');
+      setError(err.message || 'Gagal memuat daftar perusahaan');
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadRooms();
-  }, [loadRooms]);
+  // Load rooms when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadRooms();
+    }, [loadRooms])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -73,7 +83,7 @@ export default function RoomListScreen({ navigation }: Props) {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Memuat room...</Text>
+          <Text style={styles.loadingText}>Memuat perusahaan...</Text>
         </View>
       </SafeAreaView>
     );

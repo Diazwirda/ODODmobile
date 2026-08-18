@@ -35,6 +35,7 @@ export class UnifiedRoomService {
 
   /**
    * Get rooms from specific backend
+   * NOTE: Getting rooms is a global operation and should not include X-Room-Id header
    */
   private static async getRoomsFromBackend(
     backend: BackendType,
@@ -42,7 +43,16 @@ export class UnifiedRoomService {
     const client = spotClient();
 
     try {
-      const { data } = await client.get<Room[]>('/rooms');
+      // Get all rooms without X-Room-Id header (it's a global operation)
+      const { data } = await client.get<Room[]>('/rooms', {
+        skipRoomId: true, // Flag to skip X-Room-Id header
+      } as any);
+      
+      if (__DEV__) {
+        console.log(`[UnifiedRoomService] Fetched ${data.length} rooms from ${backend}:`, 
+          data.map(r => ({ id: r.id, name: r.name }))
+        );
+      }
       
       // Tag each room with its backend
       return data.map((room) => normalizeRoom(room, backend));
@@ -71,12 +81,53 @@ export class UnifiedRoomService {
   ): Promise<Room> {
     const client = spotClient();
 
-    // Create room without X-Room-Id header (it's a global operation)
-    const { data } = await client.post<Room>('/rooms', payload, {
-      skipRoomId: true, // Flag to skip X-Room-Id header
-    } as any);
-    
-    return normalizeRoom(data, backend);
+    try {
+      // Create room with auto-generated invite code (8 character uppercase random)
+      // Valid invite_code_type values: 'generated' or 'manual'
+      // Using 'generated' for automatic code generation
+      const response = await client.post<Room>('/rooms', {
+        ...payload,
+        invite_code_type: 'generated',
+        invite_code_enabled: true, // Enable invite code by default
+      }, {
+        skipRoomId: true,
+      } as any);
+      
+      if (__DEV__) {
+        console.log('[UnifiedRoomService] POST /rooms response:', {
+          status: response.status,
+          data: response.data,
+        });
+      }
+      
+      const { data } = response;
+      
+      if (!data) {
+        throw new Error('Backend did not return room data');
+      }
+      
+      if (__DEV__) {
+        console.log('[UnifiedRoomService] Room created:', {
+          id: data.id,
+          name: data.name,
+          code: data.code || data.invite_code,
+          membership_role: data.membership_role,
+          user_role: data.user_role,
+        });
+      }
+      
+      return normalizeRoom(data, backend);
+    } catch (error: any) {
+      if (__DEV__) {
+        console.error('[UnifiedRoomService] Create room failed:', {
+          status: error.response?.status,
+          message: error.response?.data?.message,
+          errors: error.response?.data?.errors,
+          fullError: error.response?.data,
+        });
+      }
+      throw error;
+    }
   }
 
   /**

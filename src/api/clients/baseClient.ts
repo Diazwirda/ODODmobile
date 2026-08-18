@@ -56,7 +56,12 @@ export const createApiClient = (options: ClientOptions): AxiosInstance => {
         const roomId = await options.getActiveRoomId();
         if (roomId) {
           requestConfig.headers['X-Room-Id'] = String(roomId);
+          if (__DEV__) {
+            console.log(`[API] ${requestConfig.method?.toUpperCase()} ${requestConfig.url} → X-Room-Id: ${roomId}`);
+          }
         }
+      } else if (skipRoomId && __DEV__) {
+        console.log(`[API] ${requestConfig.method?.toUpperCase()} ${requestConfig.url} → Skip X-Room-Id (global operation)`);
       }
 
       // Set content type based on data

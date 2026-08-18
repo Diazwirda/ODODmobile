@@ -20,7 +20,7 @@ import { handleApiError, getValidationErrors } from '../../utils/toast';
 import type { AppStackParamList } from '../../navigation/types';
 
 const schema = z.object({
-  name: z.string().min(3, 'Nama room minimal 3 karakter'),
+  name: z.string().min(3, 'Nama perusahaan minimal 3 karakter'),
   description: z.string().optional(),
 });
 
@@ -51,6 +51,11 @@ export default function CreateRoomScreen({ navigation }: Props) {
         name: values.name,
         description: values.description || undefined,
       });
+      
+      // Wait a bit for backend to process
+      // This gives backend time to add user as member
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       navigation.goBack();
     } catch (err: unknown) {
       const fieldErrors = getValidationErrors(err);
@@ -82,7 +87,7 @@ export default function CreateRoomScreen({ navigation }: Props) {
           >
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Buat Room Baru</Text>
+          <Text style={styles.headerTitle}>Buat Perusahaan Baru</Text>
           <View style={styles.backBtn} />
         </View>
 
@@ -100,7 +105,7 @@ export default function CreateRoomScreen({ navigation }: Props) {
           {/* Form */}
           <View style={styles.field}>
             <Text style={styles.label}>
-              Nama Room <Text style={styles.required}>*</Text>
+              Nama Perusahaan <Text style={styles.required}>*</Text>
             </Text>
             <Controller
               control={control}
@@ -132,7 +137,7 @@ export default function CreateRoomScreen({ navigation }: Props) {
                     styles.textarea,
                     errors.description ? styles.inputError : null,
                   ]}
-                  placeholder="Deskripsi singkat room ini..."
+                  placeholder="Deskripsi singkat perusahaan ini..."
                   placeholderTextColor="#9CA3AF"
                   multiline
                   numberOfLines={4}
@@ -154,12 +159,12 @@ export default function CreateRoomScreen({ navigation }: Props) {
             onPress={handleSubmit(onSubmit)}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Buat Room"
+            accessibilityLabel="Buat Perusahaan"
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.btnPrimaryText}>Buat Room</Text>
+              <Text style={styles.btnPrimaryText}>Buat Perusahaan</Text>
             )}
           </TouchableOpacity>
         </ScrollView>

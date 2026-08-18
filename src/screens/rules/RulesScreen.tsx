@@ -166,7 +166,7 @@ export default function RulesScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ScreenHeader
         title="Master Rules"
-        subtitle="Daftar rule aktif di room ini"
+        subtitle="Daftar rule aktif di perusahaan ini"
         right={
           isAdmin ? (
             <TouchableOpacity style={styles.addButton} onPress={openCreate}>
